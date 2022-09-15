@@ -38,6 +38,8 @@ class Model(nn.Module):
         self.clasA = nn.Parameter(torch.randn(d))
         
         self.relu = nn.ReLU()
+        
+        self.temperature = nn.Parameter(torch.randn(1))
 
         self.load_weights(weights=weights)
 
@@ -74,7 +76,9 @@ class Model(nn.Module):
         inputsA = self.encoderA(inputsA) #(B x (chunk_size * framerate) + 1 x d)
         
         #Extract class token
-        classV = inputsV[:, 0, :] #(B x 1 x d)
-        classA = inputsA[:, 0, :] #(B x 1 x d)
+        classV = nn.functional.normalize(torch.squeeze(inputsV[:, 0, :]), dim=1) #(B x d)
+        classA = nn.functional.normalize(torch.squeeze(inputsA[:, 0, :]), dim=1) #(B x d)
+        
+        logits = torch.dot(classV, torch.transpose(classA, 0, 1)) * torch.exp(self.temperature)
             
-        return classV, classA
+        return logits

@@ -13,6 +13,7 @@ from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import os
 from datetime import datetime
 import time
+from loss import CLIP_loss
 
 torch.manual_seed(1)
 np.random.seed(1)
@@ -67,7 +68,6 @@ def main(args):
     parameters_per_layer  = [p.numel() for p in model.parameters() if p.requires_grad]
     logging.info("Total number of parameters: " + str(total_params))
     
-    print(asdf)
     # create dataloader
     if not args.test_only:
         
@@ -90,7 +90,7 @@ def main(args):
     # training parameters
     if not args.test_only:
         #criterion = NLLLoss()
-        criterion = NLLLoss_weights()
+        criterion = CLIP_loss()
         optimizer = torch.optim.Adam(model.parameters(), lr=args.LR, 
                                     betas=(0.9, 0.999), eps=1e-08, 
                                     weight_decay=1e-5, amsgrad=True)
