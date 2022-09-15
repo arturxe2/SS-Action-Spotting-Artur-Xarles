@@ -16,9 +16,13 @@ class CLIP_loss(torch.nn.Module):
         #self.weights1 = weights1
         
     def forward(self, classV, classA):
+        
+        #a.flatten()[1:].view(n-1, n+1)[:,:-1].reshape(n, n-1)
         loss = InfoNCE()
         query = classV
         positive_key = classA
+        
+        #neg_samplesV = classV.reapeat()
         #negative_keys = 
         return (loss(query, positive_key) + loss(positive_key, query)) / 2    
     
