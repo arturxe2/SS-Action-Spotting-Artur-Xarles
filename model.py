@@ -83,6 +83,6 @@ class Model(nn.Module):
         classV = nn.functional.normalize(torch.squeeze(inputsV[:, 0, :]), dim=1) #(B x d)
         classA = nn.functional.normalize(torch.squeeze(inputsA[:, 0, :]), dim=1) #(B x d)
         
-        logits = torch.dot(classV, torch.transpose(classA, 0, 1)) * torch.exp(self.temperature)
+        logits = torch.mm(classV, torch.transpose(classA, 0, 1)) * torch.exp(self.temperature)
             
         return logits
