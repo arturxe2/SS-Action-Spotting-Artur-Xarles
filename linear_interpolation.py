@@ -29,7 +29,7 @@ def LinearInterpolation(path = '/data-net/datasets/SoccerNetv2/Baidu_features',
             feat_half1_2fps.append(feat_aux)
             
         feat_half1_2fps.append(feat_half1[-1, :])
-        print(feat_half1_2fps.shape)
+        print(np.array(feat_half1_2fps).shape)
         print(asdf)
         
     print(listGames)
