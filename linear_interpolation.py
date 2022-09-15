@@ -57,5 +57,17 @@ def LinearInterpolation(path = '/data-net/datasets/SoccerNetv2/Baidu_features',
         
         
     print('Saved 2fps features')
-    
-LinearInterpolation()
+
+#Baidu features 2fps
+LinearInterpolation(path = '/data-net/datasets/SoccerNetv2/Baidu_features', 
+                        output_path = "/data-local/data3-ssd/axesparraguera",
+                        input_name = 'baidu_soccer_embeddings.npy', 
+                        output_name = 'baidu_soccer_embeddings_2fps.npy', 
+                        split = ['train', 'valid', 'test'])
+
+#Audio features 2fps
+LinearInterpolation(path = '/data-local/data1-hdd/axesparraguera/vggish', 
+                        output_path = "/data-local/data3-ssd/axesparraguera",
+                        input_name = 'featA2.npy', 
+                        output_name = 'audio_embeddings_2fps.npy', 
+                        split = ['train', 'valid', 'test'])
