@@ -70,6 +70,7 @@ class Model(nn.Module):
         clasV = self.clasV.repeat(inputsV.shape[0], 1)
         clasA = self.clasA.repeat(inputsA.shape[0], 1)
         print(clasV.shape)
+        print(clasV)
         
         #Add class token
         inputsV = torch.cat((clasV, inputsV), dim=1) #(B x (chunk_size * framerate) + 1 x d)
