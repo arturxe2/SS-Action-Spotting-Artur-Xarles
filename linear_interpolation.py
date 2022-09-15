@@ -10,3 +10,5 @@ def LinearInterpolation(path = '/data-net/datasets/SoccerNetv2/Baidu_features',
                         output_name = 'baidu_soccer_embeddings_2fps.npy', 
                         split = ['train', 'valid', 'test']):
     print('Hola')
+    
+LinearInterpolation()
