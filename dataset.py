@@ -56,7 +56,7 @@ class SoccerNetClips(Dataset):
         self.game_featsA = list()
 
 
-        stride = self.chunk_size * 20
+        stride = self.chunk_size * 100
         for game in tqdm(self.listGames):
             
             feat_half1V = np.load(os.path.join(path_baidu, game, "1_" + features_baidu))
