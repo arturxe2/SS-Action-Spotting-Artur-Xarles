@@ -131,4 +131,5 @@ class SoccerNetClips(Dataset):
 
         return len(self.game_featsV)
 
-SoccerNetClips()
+a = SoccerNetClips()
+print(a.__len__())
