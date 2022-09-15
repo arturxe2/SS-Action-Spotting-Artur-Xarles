@@ -2,7 +2,7 @@
 """
 Created on Thu Sep 15 12:20:25 2022
 
-@author: artur
+@author: arturxe
 """
 
 import math

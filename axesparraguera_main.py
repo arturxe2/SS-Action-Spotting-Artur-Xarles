@@ -2,7 +2,7 @@
 """
 Created on Thu Sep 15 11:57:38 2022
 
-@author: artur
+@author: arturxe
 """
 import torch
 import numpy as np

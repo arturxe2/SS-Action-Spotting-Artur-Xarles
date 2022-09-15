@@ -2,7 +2,7 @@
 """
 Created on Thu Sep 15 14:20:47 2022
 
-@author: artur
+@author: arturxe
 """
 import torch
 
