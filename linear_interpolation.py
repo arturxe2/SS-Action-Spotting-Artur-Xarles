@@ -12,6 +12,7 @@ import numpy as np
 
 
 def LinearInterpolation(path = '/data-net/datasets/SoccerNetv2/Baidu_features', 
+                        output_path = "/data-local/data3-ssd/axesparraguera",
                         input_name = 'baidu_soccer_embeddings.npy', 
                         output_name = 'baidu_soccer_embeddings_2fps.npy', 
                         split = ['train', 'valid', 'test']):
@@ -44,9 +45,15 @@ def LinearInterpolation(path = '/data-net/datasets/SoccerNetv2/Baidu_features',
         feat_half2_2fps.append(feat_half2[-1, :])
         feat_half2_2fps = np.array(feat_half2_2fps)
         
+        #Check if output path exists
+        out_path = os.path.join(output_path, game)
+        exists = os.path.exists(out_path)
+        if not exists:
+            os.makedirs(out_path)
+        
         #Store new features at 2fps
-        np.save(os.path.join(path, game, '1_' + output_name), feat_half1_2fps)
-        np.save(os.path.join(path, game, '2_' + output_name), feat_half2_2fps)
+        np.save(os.path.join(out_path, '1_' + output_name), feat_half1_2fps)
+        np.save(os.path.join(out_path, '2_' + output_name), feat_half2_2fps)
         
         
     print('Saved 2fps features')
