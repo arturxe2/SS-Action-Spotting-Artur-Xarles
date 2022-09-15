@@ -89,9 +89,9 @@ def train(dataloader,
             featsV = featsV.cuda()
             featsA = featsA.cuda()
             # compute output
-            logits = model(featsV, featsA)
+            classV, classA = model(featsV, featsA)
             
-            loss = criterion(logits)
+            loss = criterion(classV, classA)
         
             # measure accuracy and record loss
             losses.update(loss.item(), featsV.size(0) + featsA.size(0))
