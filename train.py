@@ -41,7 +41,7 @@ def trainer(train_loader,
             'best_loss': best_loss,
             'optimizer': optimizer.state_dict(),
         }
-        os.makedirs(os.path.join("models", model_name), exist_ok=True)
+        os.makedirs(os.path.join("SSmodels", model_name), exist_ok=True)
 
         # remember best prec@1 and save checkpoint
         is_better = loss_training < best_loss
