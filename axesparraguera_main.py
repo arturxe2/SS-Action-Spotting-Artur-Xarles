@@ -9,7 +9,7 @@ import numpy as np
 import logging
 from dataset import SoccerNetClips
 from model import Model
-from argparse import ArgumentParser
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 
 torch.manual_seed(1)
 np.random.seed(1)
