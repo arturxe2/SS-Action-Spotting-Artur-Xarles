@@ -67,10 +67,9 @@ class Model(nn.Module):
         inputsA = inputsA.permute((0, 2, 1)) #(B x chunk_size * framerate x d)
         
         #Class token to size [B x 1 x d]
-        clasV = self.clasV.repeat(inputsV.shape[0], 1)
-        clasA = self.clasA.repeat(inputsA.shape[0], 1)
+        clasV = torch.unsqueeze(self.clasV.repeat(inputsV.shape[0], 1), dim=1)
+        clasA = torch.unsqueeze(self.clasA.repeat(inputsA.shape[0], 1), dim=1)
         print(clasV.shape)
-        print(clasV)
         
         #Add class token
         inputsV = torch.cat((clasV, inputsV), dim=1) #(B x (chunk_size * framerate) + 1 x d)
