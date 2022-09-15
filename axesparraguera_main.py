@@ -171,7 +171,7 @@ if __name__ == '__main__':
     
     parser.add_argument('--baidu_path', required=False, type=str, default='/data-local/data3-ssd/axesparraguera', help='path of baidu features')
     parser.add_argument('--features_baidu', required=False, type=str, default='baidu_soccer_embeddings_2fps.npy', help='baidu features name')
-    parser.add_argument('--audio_path', required=False, type=str, default='/data-local/data3-ssd/axesparraguera, help='path of audio features')
+    parser.add_argument('--audio_path', required=False, type=str, default='/data-local/data3-ssd/axesparraguera', help='path of audio features')
     parser.add_argument('--features_audio', required=False, type=str, default='audio_embeddings_2fps.npy', help='audio features name')
     
     parser.add_argument('--max_epochs',   required=False, type=int,   default=1000,     help='Maximum number of epochs' )
