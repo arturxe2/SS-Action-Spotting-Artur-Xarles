@@ -72,14 +72,12 @@ class SoccerNetClips(Dataset):
             
             #Visual features bigger than audio features
             if feat_half1V.shape[0] > feat_half1A.shape[0]:
-                print('Resized')
                 feat_half1A_aux = np.zeros((feat_half1V.shape[0], feat_half1A.shape[1]))
                 feat_half1A_aux[:feat_half1A.shape[0]] = feat_half1A
                 feat_half1A_aux[feat_half1A.shape[0]:] = feat_half1A[feat_half1A.shape[0]-1]
                 feat_half1A = feat_half1A_aux
                 
             if feat_half2V.shape[0] > feat_half2A.shape[0]:
-                print('Resized')
                 feat_half2A_aux = np.zeros((feat_half2V.shape[0], feat_half2A.shape[1]))
                 feat_half2A_aux[:feat_half2A.shape[0]] = feat_half2A
                 feat_half2A_aux[feat_half2A.shape[0]:] = feat_half2A[feat_half2A.shape[0]-1]
@@ -87,14 +85,12 @@ class SoccerNetClips(Dataset):
                 
             #Audio features bigger than visual features
             if feat_half1A.shape[0] > feat_half1V.shape[0]:
-                print('Resized')
                 feat_half1V_aux = np.zeros((feat_half1A.shape[0], feat_half1V.shape[1]))
                 feat_half1V_aux[:feat_half1V.shape[0]] = feat_half1V
                 feat_half1V_aux[feat_half1V.shape[0]:] = feat_half1V[feat_half1V.shape[0]-1]
                 feat_half1V = feat_half1V_aux
                 
             if feat_half2A.shape[0] > feat_half2V.shape[0]:
-                print('Resized')
                 feat_half2V_aux = np.zeros((feat_half2A.shape[0], feat_half2V.shape[1]))
                 feat_half2V_aux[:feat_half2V.shape[0]] = feat_half2V
                 feat_half2V_aux[feat_half2V.shape[0]:] = feat_half2V[feat_half2V.shape[0]-1]
