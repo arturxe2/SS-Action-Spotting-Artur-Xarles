@@ -13,9 +13,8 @@ class CLIP_loss(torch.nn.Module):
         #self.weights1 = weights1
         
     def forward(self, logits):
-        labels = torch.arange(0, logits.shape[0])
-        loss = torch.nn.CrossEntropyLoss()
-        loss1 = loss(logits, labels, axis = 0)
-        loss2 = loss(logits, labels, axis = 1)
+        labels = torch.arange(0, logits.shape[0]).cuda()
+        loss1 = torch.nn.functional.cross_entropy(logits, labels)
+        loss2 = torch.nn.functional.cross_entropy(torch.transpose(logits, 0, 1), labels)
         
         return (loss1 + loss2) / 2
