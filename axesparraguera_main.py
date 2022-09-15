@@ -9,6 +9,7 @@ import numpy as np
 import logging
 from dataset import SoccerNetClips
 from model import Model
+from argparse import ArgumentParser
 
 torch.manual_seed(1)
 np.random.seed(1)
@@ -66,20 +67,11 @@ def main(args):
     print(asdf)
     # create dataloader
     if not args.test_only:
-        sample_strategy = False
-
-        if sample_strategy == True:
-            sampler = WeightedRandomSampler(torch.from_numpy(dataset_Train.weights).type('torch.DoubleTensor'), len(dataset_Train.weights))
-            train_loader = torch.utils.data.DataLoader(dataset_Train,
-                batch_size=args.batch_size,
-                num_workers=args.max_num_worker, pin_memory=True, sampler = sampler)
-
-        else:
-            train_loader = torch.utils.data.DataLoader(dataset_Train,
-                              batch_size=args.batch_size, shuffle=True,
-                              num_workers=args.max_num_worker, pin_memory=True)
-                #torch.save(train_loader, 'train_loader.pth')
-                
+        
+        train_loader = torch.utils.data.DataLoader(dataset_Train, 
+                            batch_size=args.batch_size, shuffle=True,
+                            num_workers=args.max_num_worker, pin_memory=True)
+        '''        
         val_loader = torch.utils.data.DataLoader(dataset_Valid,
             batch_size=args.batch_size, shuffle=False,
             num_workers=args.max_num_worker, pin_memory=True)
@@ -88,14 +80,12 @@ def main(args):
         val_metric_loader = torch.utils.data.DataLoader(dataset_Valid_metric,
             batch_size=args.batch_size, shuffle=False,
             num_workers=args.max_num_worker, pin_memory=True)
-
+        '''
 
     
 
     # training parameters
     if not args.test_only:
-        #class_weights1 = torch.from_numpy(dataset_Train.class_weights1).type('torch.DoubleTensor').cuda()
-        #class_weights2 = torch.from_numpy(dataset_Train.class_weights2).type('torch.DoubleTensor').cuda()
         #criterion = NLLLoss()
         criterion = NLLLoss_weights()
         optimizer = torch.optim.Adam(model.parameters(), lr=args.LR, 
