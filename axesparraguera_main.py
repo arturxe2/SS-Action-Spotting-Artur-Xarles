@@ -8,6 +8,7 @@ import torch
 import numpy as np
 import logging
 from dataset import SoccerNetClips
+from model import Model
 
 torch.manual_seed(1)
 np.random.seed(1)
@@ -54,15 +55,15 @@ def main(args):
         
             
     # create model
-    model = Model(weights=args.load_weights,
-                  num_classes=dataset_Test.num_classes, chunk_size=args.chunk_size*args.framerate,
-                  framerate=args.framerate, model=args.model).cuda()
+    model = Model(weights=args.load_weights, d=args.hidden_d, 
+        chunk_size=args.chunk_size, framerate=args.framerate, model=args.model).cuda()
     logging.info(model)
     total_params = sum(p.numel()
                        for p in model.parameters() if p.requires_grad)
     parameters_per_layer  = [p.numel() for p in model.parameters() if p.requires_grad]
     logging.info("Total number of parameters: " + str(total_params))
-
+    
+    print(asdf)
     # create dataloader
     if not args.test_only:
         sample_strategy = False
@@ -187,7 +188,8 @@ if __name__ == '__main__':
     parser.add_argument('--version', required=False, type=int,   default=2,     help='Version of the dataset' )
     parser.add_argument('--framerate', required=False, type=int,   default=2,     help='Framerate of the input features' )
     parser.add_argument('--chunk_size', required=False, type=int,   default=10,     help='Size of the chunk (in seconds)' )
-    parser.add_argument('--model',       required=False, type=str,   default="HMTAS", help='How to pool' )
+    parser.add_argument('--model',       required=False, type=str,   default="SSModel", help='How to pool' )
+    parser.add_argument('--hidden_d', required=False, type=int, default=512, help='Size of hidden dimension representation')
     parser.add_argument('--NMS_window',       required=False, type=int,   default=20, help='NMS window in second' )
     parser.add_argument('--NMS_threshold',       required=False, type=float,   default=0.5, help='NMS threshold for positive results' )
 
