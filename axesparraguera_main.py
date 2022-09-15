@@ -108,8 +108,11 @@ def main(args):
                 max_epochs=args.max_epochs)
 
     # For the best model only
-    checkpoint = torch.load(os.path.join("models", args.model_name, "model.pth.tar"))
+    checkpoint = torch.load(os.path.join("SSmodels", args.model_name, "model.pth.tar"))
     model.load_state_dict(checkpoint['state_dict'])
+    
+    
+    print(asdf)
 
     # test on multiple splits [test/challenge]
     n_ensemble_train = 0
@@ -206,8 +209,8 @@ if __name__ == '__main__':
 
     # os.makedirs(args.logging_dir, exist_ok=True)
     # log_path = os.path.join(args.logging_dir, datetime.now().strftime('%Y-%m-%d_%H-%M-%S.log'))
-    os.makedirs(os.path.join("models", args.model_name), exist_ok=True)
-    log_path = os.path.join("models", args.model_name,
+    os.makedirs(os.path.join("SSmodels", args.model_name), exist_ok=True)
+    log_path = os.path.join("SSmodels", args.model_name,
                             datetime.now().strftime('%Y-%m-%d_%H-%M-%S.log'))
     logging.basicConfig(
         level=numeric_level,

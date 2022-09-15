@@ -82,7 +82,7 @@ class Model(nn.Module):
         classV = torch.squeeze(inputsV[:, 0, :]) #(B x d)
         classA = torch.squeeze(inputsA[:, 0, :]) #(B x d)
         
-        
+        embeddings = torch.cat((classV, classA), dim=1)
         logits = torch.mm(classV, torch.transpose(classA, 0, 1)) * torch.exp(self.temperature)
             
         return logits
