@@ -79,11 +79,9 @@ class Model(nn.Module):
         inputsA = self.encoderA(inputsA) #(B x (chunk_size * framerate) + 1 x d)
         
         #Extract class token
-        classV = nn.functional.normalize(torch.squeeze(inputsV[:, 0, :]), dim=1) #(B x d)
-        classA = nn.functional.normalize(torch.squeeze(inputsA[:, 0, :]), dim=1) #(B x d)
+        classV = torch.squeeze(inputsV[:, 0, :]) #(B x d)
+        classA = torch.squeeze(inputsA[:, 0, :]) #(B x d)
         
-        print(classV[0, 0:10])
-        print(classA[0, 0:10])
         
         logits = torch.mm(classV, torch.transpose(classA, 0, 1)) * torch.exp(self.temperature)
             
