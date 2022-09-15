@@ -169,16 +169,14 @@ if __name__ == '__main__':
 
     parser = ArgumentParser(description='context aware loss function', formatter_class=ArgumentDefaultsHelpFormatter)
     
-    parser.add_argument('--labels_path', required=False, type=str, default="/data-net/datasets/SoccerNetv2/ResNET_TF2", help='path of annotated labels')
-    parser.add_argument('--baidu_path', required=False, type=str, default="/data-net/datasets/SoccerNetv2/Baidu_features", help='path of baidu features')
-    parser.add_argument('--features_baidu', required=False, type=str, default="baidu_soccer_embeddings.npy", help='baidu features name')
-    parser.add_argument('--audio_path', required=False, type=str, default="/data-local/data1-hdd/axesparraguera/vggish", help='path of audio features')
-    parser.add_argument('--features_audio', required=False, type=str, default="featA2.npy", help='audio features name')
-    parser.add_argument('--store_path', required=False, type=str, default="/data-local/data3-ssd/axesparraguera", help='path to store the samples')
+    parser.add_argument('--baidu_path', required=False, type=str, default='/data-local/data3-ssd/axesparraguera', help='path of baidu features')
+    parser.add_argument('--features_baidu', required=False, type=str, default='baidu_soccer_embeddings_2fps.npy', help='baidu features name')
+    parser.add_argument('--audio_path', required=False, type=str, default='/data-local/data3-ssd/axesparraguera, help='path of audio features')
+    parser.add_argument('--features_audio', required=False, type=str, default='audio_embeddings_2fps.npy', help='audio features name')
     
     parser.add_argument('--max_epochs',   required=False, type=int,   default=1000,     help='Maximum number of epochs' )
     parser.add_argument('--load_weights',   required=False, type=str,   default=None,     help='weights to load' )
-    parser.add_argument('--model_name',   required=False, type=str,   default="Pooling",     help='named of the model to save' )
+    parser.add_argument('--model_name',   required=False, type=str,   default="Pooling",     help='name of the model to save' )
     parser.add_argument('--test_only',   required=False, action='store_true',  help='Perform testing only' )
 
     parser.add_argument('--split_train', nargs='+', default=["train"], help='list of split for training')
@@ -187,10 +185,8 @@ if __name__ == '__main__':
 
 
     parser.add_argument('--version', required=False, type=int,   default=2,     help='Version of the dataset' )
-    parser.add_argument('--num_features', required=False, type=int,   default=512,     help='Number of input features' )
-    parser.add_argument('--evaluation_frequency', required=False, type=int,   default=10,     help='Number of chunks per epoch' )
     parser.add_argument('--framerate', required=False, type=int,   default=2,     help='Framerate of the input features' )
-    parser.add_argument('--chunk_size', required=False, type=int,   default=60,     help='Size of the chunk (in seconds)' )
+    parser.add_argument('--chunk_size', required=False, type=int,   default=10,     help='Size of the chunk (in seconds)' )
     parser.add_argument('--model',       required=False, type=str,   default="HMTAS", help='How to pool' )
     parser.add_argument('--NMS_window',       required=False, type=int,   default=20, help='NMS window in second' )
     parser.add_argument('--NMS_threshold',       required=False, type=float,   default=0.5, help='NMS threshold for positive results' )
