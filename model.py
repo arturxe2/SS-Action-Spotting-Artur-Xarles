@@ -33,8 +33,9 @@ class Model(nn.Module):
         encoder_layerA = nn.TransformerEncoderLayer(d_model = d, nhead = 8)
         self.encoderA = nn.TransformerEncoder(encoder_layerA, 1)
         
-        self.clasV = nn.Parameter(d)
-        self.clasA = nn.Parameter(d)
+        
+        self.clasV = nn.Parameter(torch.randn(d))
+        self.clasA = nn.Parameter(torch.randn(d))
         
         self.relu = nn.ReLU()
 
@@ -60,9 +61,13 @@ class Model(nn.Module):
         inputsV = inputsV.permute((0, 2, 1)) #(B x chunk_size * framerate x d)
         inputsA = inputsA.permute((0, 2, 1)) #(B x chunk_size * framerate x d)
         
+        #Class token to size [B x 1 x d]
+        clasV = self.clasV.repeat(inputsV.shape[0], 1)
+        clasA = self.clasA.repeat(inputsA.shape[0], 1)
+        
         #Add class token
-        inputsV = torch.cat((self.clasV, inputsV), dim=1) #(B x (chunk_size * framerate) + 1 x d)
-        inputsA = torch.cat((self.clasA, inputsA), dim=1) #(B x (chunk_size * framerate) + 1 x d)
+        inputsV = torch.cat((clasV, inputsV), dim=1) #(B x (chunk_size * framerate) + 1 x d)
+        inputsA = torch.cat((clasA, inputsA), dim=1) #(B x (chunk_size * framerate) + 1 x d)
         
         #Transformer encoders
         inputsV = self.encoderV(inputsV) #(B x (chunk_size * framerate) + 1 x d)

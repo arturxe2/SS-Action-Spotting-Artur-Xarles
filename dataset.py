@@ -130,6 +130,3 @@ class SoccerNetClips(Dataset):
     def __len__(self):
 
         return len(self.game_featsV)
-
-a = SoccerNetClips()
-print(a.__len__())
