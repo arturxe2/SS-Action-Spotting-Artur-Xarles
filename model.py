@@ -53,6 +53,9 @@ class Model(nn.Module):
     #def forward(self, inputs):
     def forward(self, inputsV, inputsA):
         
+        inputsV = inputsV.float()
+        inputsA = inputsA.float()
+        
         inputsV = inputsV.permute((0, 2, 1)) #(B x n_features x chunk_size * framerate)
         inputsA = inputsA.permute((0, 2, 1)) #(B x n_features x chunk_size * framerate)
         
