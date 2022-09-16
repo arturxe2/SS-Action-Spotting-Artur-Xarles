@@ -380,8 +380,6 @@ def testSpotting(dataloader, model, model_name, overwrite=True, NMS_window=30, N
                         (b+1) < len(featV_half2) else len(featV_half2)-1
                     featV = featV_half2[start_frame:end_frame].cuda()
                     featA = featA_half2[start_frame:end_frame].cuda()
-                    print(featV.shape)
-                    print(featA.shape)
                     classV, classA, outputs = model(featV, featA)
                     outputs = outputs.cpu().detach().numpy()
                     timestamp_long_half_2.append(outputs)

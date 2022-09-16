@@ -135,7 +135,7 @@ def main(args):
                         path_labels = args.labels_path,
                         features_baidu = args.features_baidu,
                         features_audio = args.features_audio, 
-                        split=args.split_test, 
+                        split=split, 
                         framerate=args.framerate, chunk_size=args.chunk_size*args.framerate)
         print('Test loader')
         test_loader = torch.utils.data.DataLoader(dataset_Test,
