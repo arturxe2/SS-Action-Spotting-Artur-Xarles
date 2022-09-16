@@ -173,6 +173,7 @@ if __name__ == '__main__':
     parser.add_argument('--features_baidu', required=False, type=str, default='baidu_soccer_embeddings_2fps.npy', help='baidu features name')
     parser.add_argument('--audio_path', required=False, type=str, default='/data-local/data3-ssd/axesparraguera', help='path of audio features')
     parser.add_argument('--features_audio', required=False, type=str, default='audio_embeddings_2fps.npy', help='audio features name')
+    parser.add_argument('--labels_path', required=False, type=str, default='/data-net/datasets/SoccerNetv2/ResNET_TF2', help='path of labels')
     
     parser.add_argument('--max_epochsSS',   required=False, type=int,   default=20,     help='Maximum number of epochs for SS' )
     parser.add_argument('--max_epochsAS',   required=False, type=int,   default=100,     help='Maximum number of epochs for AS' )
