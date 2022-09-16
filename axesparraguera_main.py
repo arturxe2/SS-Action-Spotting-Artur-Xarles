@@ -13,7 +13,7 @@ from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import os
 from datetime import datetime
 import time
-from loss import CLIP_loss
+from loss import CLIP_loss, NLLLoss
 from train import trainerSS, trainerAS
 
 torch.manual_seed(1)
@@ -106,6 +106,11 @@ def main(args):
                 model, optimizer, criterion,
                 model_name=args.model_name,
                 max_epochs=args.max_epochsSS)
+        
+        criterion = NLLLoss()
+        optimizer = torch.optim.Adam(model.parameters(), lr=args.LR, 
+                                    betas=(0.9, 0.999), eps=1e-08, 
+                                    weight_decay=1e-5, amsgrad=True)
         
         trainerAS(train_loader,
                   val_loader,

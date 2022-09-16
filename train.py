@@ -204,6 +204,9 @@ def trainAS(dataloader,
     losses = AverageMeter()
 
     # switch to train mode
+    for param in model.parameters():
+        print(param)
+    
     if train:
         model.train()
 
@@ -306,3 +309,195 @@ def test(dataloader, model, model_name):
     # print("Average-mAP: ", a_mAP)
 
     return mAP
+
+
+
+#Define test spotting
+def testSpotting(dataloader, model, model_name, overwrite=True, NMS_window=30, NMS_threshold=0.5):
+
+    split = '_'.join(dataloader.dataset.split)
+    # print(split)
+    output_results = os.path.join("models", model_name, f"results_spotting_{split}.zip")
+    output_folder = f"outputs_{split}"
+
+    if not os.path.exists(output_results) or overwrite:
+        batch_time = AverageMeter()
+        data_time = AverageMeter()
+
+        spotting_grountruth = list()
+        spotting_grountruth_visibility = list()
+        spotting_predictions = list()
+
+        model.eval()
+
+        count_visible = torch.FloatTensor([0.0]*dataloader.dataset.num_classes)
+        count_unshown = torch.FloatTensor([0.0]*dataloader.dataset.num_classes)
+        count_all = torch.FloatTensor([0.0]*dataloader.dataset.num_classes)
+
+        end = time.time()
+        with tqdm(enumerate(dataloader), total=len(dataloader), ncols=120) as t:
+
+            for i, (game_ID, featV_half1, featA_half1, featV_half2, featA_half2, label_half1, label_half2) in t:
+
+                data_time.update(time.time() - end)
+    
+                # Batch size of 1
+                    
+                game_ID = game_ID[0]
+                featV_half1 = featV_half1.squeeze(0)
+                featA_half1 = featA_half1.squeeze(0)
+                label_half1 = label_half1.float().squeeze(0)
+                featV_half2 = featV_half2.squeeze(0)
+                featA_half2 = featA_half2.squeeze(0)
+                label_half2 = label_half2.float().squeeze(0)
+                    
+    
+                # Compute the output for batches of frames
+                BS = 256
+                timestamp_long_half_1 = []
+                for b in range(int(np.ceil(len(featV_half1)/BS))):
+                    start_frame = BS*b
+                    end_frame = BS*(b+1) if BS * \
+                        (b+1) < len(featV_half1) else len(featV_half1)-1
+                    featV = featV_half1[start_frame:end_frame].cuda()
+                    featA = featA_half1[start_frame:end_frame].cuda()
+                    classV, classA, outputs = model(featV, featA)
+                    outputs = outputs.cpu().detach().numpy()
+                    timestamp_long_half_1.append(outputs)
+                timestamp_long_half_1 = np.concatenate(timestamp_long_half_1)
+    
+                timestamp_long_half_2 = []
+                for b in range(int(np.ceil(len(featV_half2)/BS))):
+                    start_frame = BS*b
+                    end_frame = BS*(b+1) if BS * \
+                        (b+1) < len(featV_half2) else len(featV_half2)-1
+                    featV = featV_half2[start_frame:end_frame].cuda()
+                    featA = featA_half2[start_frame:end_frame].cuda()
+                    classV, classA, outputs = model(featV, featA)
+                    outputs = outputs.cpu().detach().numpy()
+                    timestamp_long_half_2.append(outputs)
+                timestamp_long_half_2 = np.concatenate(timestamp_long_half_2)
+    
+    
+                timestamp_long_half_1 = timestamp_long_half_1[:, 1:]
+                timestamp_long_half_2 = timestamp_long_half_2[:, 1:]
+    
+                spotting_grountruth.append(torch.abs(label_half1))
+                spotting_grountruth.append(torch.abs(label_half2))
+                spotting_grountruth_visibility.append(label_half1)
+                spotting_grountruth_visibility.append(label_half2)
+                spotting_predictions.append(timestamp_long_half_1)
+                spotting_predictions.append(timestamp_long_half_2)
+                # segmentation_predictions.append(segmentation_long_half_1)
+                # segmentation_predictions.append(segmentation_long_half_2)
+    
+                # count_all = count_all + torch.sum(torch.abs(label_half1), dim=0)
+                # count_visible = count_visible + torch.sum((torch.abs(label_half1)+label_half1)/2, dim=0)
+                # count_unshown = count_unshown + torch.sum((torch.abs(label_half1)-label_half1)/2, dim=0)
+                # count_all = count_all + torch.sum(torch.abs(label_half2), dim=0)
+                # count_visible = count_visible + torch.sum((torch.abs(label_half2)+label_half2)/2, dim=0)
+                # count_unshown = count_unshown + torch.sum((torch.abs(label_half2)-label_half2)/2, dim=0)
+    
+                batch_time.update(time.time() - end)
+                end = time.time()
+    
+                desc = f'Test (spot.): '
+                desc += f'Time {batch_time.avg:.3f}s '
+                desc += f'(it:{batch_time.val:.3f}s) '
+                desc += f'Data:{data_time.avg:.3f}s '
+                desc += f'(it:{data_time.val:.3f}s) '
+                t.set_description(desc)
+    
+    
+    
+                def get_spot_from_NMS(Input, window, thresh=0.0, min_window=3):
+    
+                    detections_tmp = np.copy(Input)
+                    # res = np.empty(np.size(Input), dtype=bool)
+                    indexes = []
+                    MaxValues = []
+                    while(np.max(detections_tmp) >= thresh):
+    
+                        # Get the max remaining index and value
+                        max_value = np.max(detections_tmp)
+                        max_index = np.argmax(detections_tmp)
+                            
+                        # detections_NMS[max_index,i] = max_value
+    
+                        nms_from = int(np.maximum(-(window/2)+max_index,0))
+                        nms_to = int(np.minimum(max_index+int(window/2), len(detections_tmp)))
+                            
+                        if (detections_tmp[nms_from:nms_to] >= thresh).sum() > min_window:
+                            MaxValues.append(max_value)
+                            indexes.append(max_index)
+                        detections_tmp[nms_from:nms_to] = -1
+    
+                    return np.transpose([indexes, MaxValues])
+    
+                framerate = dataloader.dataset.framerate
+                get_spot = get_spot_from_NMS
+    
+                json_data = dict()
+                json_data["UrlLocal"] = game_ID
+                json_data["predictions"] = list()
+                nms_window = [12, 7, 20, 9, 9, 9, 9, 7, 7, 7, 7, 7, 20, 20, 9, 20, 20]
+                for half, timestamp in enumerate([timestamp_long_half_1, timestamp_long_half_2]):
+                        
+                    for l in range(dataloader.dataset.num_classes):
+                        spots = get_spot(
+                            timestamp[:, l], window=nms_window[l]*framerate, thresh=NMS_threshold, min_window = 0)
+
+                        for spot in spots:
+                            # print("spot", int(spot[0]), spot[1], spot)
+                            frame_index = int(spot[0])
+                            confidence = spot[1]
+                            # confidence = predictions_half_1[frame_index, l]
+    
+                            seconds = int((frame_index//framerate)%60)
+                            minutes = int((frame_index//framerate)//60)
+    
+                            prediction_data = dict()
+                            prediction_data["gameTime"] = str(half+1) + " - " + str(minutes) + ":" + str(seconds)
+                            if dataloader.dataset.version == 2:
+                                prediction_data["label"] = INVERSE_EVENT_DICTIONARY_V2[l]
+                            else:
+                                prediction_data["label"] = INVERSE_EVENT_DICTIONARY_V1[l]
+                            prediction_data["position"] = str(int((frame_index/framerate)*1000))
+                            prediction_data["half"] = str(half+1)
+                            prediction_data["confidence"] = str(confidence)
+                            json_data["predictions"].append(prediction_data)
+                    
+                os.makedirs(os.path.join("models", model_name, output_folder, game_ID), exist_ok=True)
+                with open(os.path.join("models", model_name, output_folder, game_ID, "results_spotting.json"), 'w') as output_file:
+                    json.dump(json_data, output_file, indent=4)
+
+
+
+        def zipResults(zip_path, target_dir, filename="results_spotting.json"):            
+            zipobj = zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED)
+            rootlen = len(target_dir) + 1
+            for base, dirs, files in os.walk(target_dir):
+                for file in files:
+                    if file == filename:
+                        fn = os.path.join(base, file)
+                        zipobj.write(fn, fn[rootlen:])
+
+
+        # zip folder
+        zipResults(zip_path=output_results,
+                target_dir = os.path.join("models", model_name, output_folder),
+                filename="results_spotting.json")
+
+    if split == "challenge": 
+        print("Visit eval.ai to evalaute performances on Challenge set")
+        return None
+    labels_path = "/data-net/datasets/SoccerNetv2/ResNET_TF2"
+    results = evaluate(SoccerNet_path=labels_path, 
+                 Predictions_path=output_results,
+                 split="test",
+                 prediction_file="results_spotting.json", 
+                 version=dataloader.dataset.version,
+                 metric="tight")    
+
+    
+    return results
