@@ -207,10 +207,11 @@ def trainAS(dataloader,
     losses = AverageMeter()
 
     # switch to train mode
-    i = 0
     for param in model.parameters():
-        print(i)
-        i += 1
+        param.requires_grad = False
+    
+    model.fc.weight.requires_grad = True
+    model.fc.bias.requires_grad = True
     
     if train:
         model.train()
