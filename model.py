@@ -41,7 +41,11 @@ class Model(nn.Module):
         self.temperature = nn.Parameter(torch.randn(1))
         
         #Spotting layers
-        self.fc = nn.Linear(2*d, self.num_classes+1)
+        self.fc = nn.Linear(d, self.num_classes+1)
+        encoder_layerM = nn.TransformerEncoderLayer(d_model = d, nhead = 8)
+        self.encoderM = nn.TransformerEncoder(encoder_layerM, 2)
+        
+        self.clasM = nn.Parameter(torch.randn(d))
         
         #General functions
         self.relu = nn.ReLU()
@@ -61,6 +65,8 @@ class Model(nn.Module):
         
         inputsV = inputsV.float()
         inputsA = inputsA.float()
+        
+        #inputsVmask = inputsV.copy()
         
         inputsV = inputsV.permute((0, 2, 1)) #(B x n_features x chunk_size * framerate)
         inputsA = inputsA.permute((0, 2, 1)) #(B x n_features x chunk_size * framerate)
@@ -88,8 +94,21 @@ class Model(nn.Module):
         classV = torch.squeeze(inputsV[:, 0, :]) #(B x d)
         classA = torch.squeeze(inputsA[:, 0, :]) #(B x d)
         
-        embeddings = torch.cat((classV, classA), dim=1) #(B x 2*d)
-        outputs = self.sigm(self.fc(embeddings))
+        embeddingsV = inputsV[:, 1:, :] #(B x (chunk_size * framerate) x d)
+        embeddingsA = inputsA[:, 1:, :] #(B x (chunk_size * framerate) x d)
+        
+        embeddings = torch.cat((embeddingsV, embeddingsA), dim=1) #(B x 2*(chunk_size * framerate) x d)
+        
+        #Class token to size [B x 1 x d]
+        clasM = torch.unsqueeze(self.clasM.repeat(embeddings.shape[0], 1), dim=1) 
+        
+        embeddings = torch.cat((clasM, embeddings), dim=1) #(B x 1 + 2*(chunk_size * framerate) x d)
+        
+        embeddings = self.encoderM(embeddings) #(B x 1 + 2*(chunk_size * framerate) x d)
+        
+        classM = torch.squeeze(embeddings[:, 0, :]) #(B x d)
+        
+        outputs = self.sigm(self.fc(classM))
         #logits = torch.mm(classV, torch.transpose(classA, 0, 1)) * torch.exp(self.temperature)
             
         return classV, classA, outputs

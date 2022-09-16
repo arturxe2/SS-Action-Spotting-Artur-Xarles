@@ -138,13 +138,28 @@ def trainerAS(train_loader,
             patience,
             model_name,
             max_epochs=1000,
-            evaluation_frequency=20):
+            evaluation_frequency=20,
+            freeze = True):
 
     logging.info("start training")
 
     best_loss = 9e99
 
     n_bad_epochs = 0
+    
+    #Freeze SS layers and unfreeze AS ones
+    if freeze:
+        # freeze all layers
+        for param in model.parameters():
+            param.requires_grad = False
+        
+        #Unfreeze final layers
+        model.fc.requires_grad_(True)
+        model.encoderM.requires_grad(True)
+        model.clasM.requires_grad_(True)
+        
+    
+    
     for epoch in range(max_epochs):
         if n_bad_epochs >= patience:
             break
@@ -206,12 +221,7 @@ def trainAS(dataloader,
     data_time = AverageMeter()
     losses = AverageMeter()
 
-    # switch to train mode
-    for param in model.parameters():
-        param.requires_grad = False
     
-    model.fc.weight.requires_grad = True
-    model.fc.bias.requires_grad = True
     
     if train:
         model.train()
@@ -501,7 +511,7 @@ def testSpotting(dataloader, model, model_name, overwrite=True, NMS_window=30, N
                  Predictions_path=output_results,
                  split="test",
                  prediction_file="results_spotting.json", 
-                 version=dataloader.dataset.version,
+                 version=2,
                  metric="tight")    
 
     

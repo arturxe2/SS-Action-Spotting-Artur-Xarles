@@ -92,7 +92,7 @@ def main(args):
     if not args.test_only:
         #criterion = NLLLoss()
         criterion = CLIP_loss()
-        optimizer = torch.optim.Adam(model.parameters(), lr=args.LR, 
+        optimizer = torch.optim.Adam(model.parameters(), lr=args.LRSS, 
                                     betas=(0.9, 0.999), eps=1e-08, 
                                     weight_decay=1e-5, amsgrad=True)
         #optimizer = torch.optim.SGD(model.parameters(), lr=args.LR,
@@ -108,13 +108,13 @@ def main(args):
                 max_epochs=args.max_epochsSS)
         
         criterion = NLLLoss()
-        optimizer = torch.optim.Adam(model.parameters(), lr=args.LR, 
+        optimizer = torch.optim.Adam(model.parameters(), lr=args.LRAS, 
                                     betas=(0.9, 0.999), eps=1e-08, 
                                     weight_decay=1e-5, amsgrad=True)
         
         trainerAS(train_loader,
                   val_loader,
-                  val_loader,
+                  val_metric_loader,
                   model, optimizer, criterion,
                   patience=args.patience,
                   model_name=args.model_name,
@@ -194,8 +194,9 @@ if __name__ == '__main__':
     parser.add_argument('--NMS_window',       required=False, type=int,   default=20, help='NMS window in second' )
     parser.add_argument('--NMS_threshold',       required=False, type=float,   default=0.5, help='NMS threshold for positive results' )
 
-    parser.add_argument('--batch_size', required=False, type=int,   default=32,     help='Batch size' )
-    parser.add_argument('--LR',       required=False, type=float,   default=1e-03, help='Learning Rate' )
+    parser.add_argument('--batch_size', required=False, type=int,   default=64,     help='Batch size' )
+    parser.add_argument('--LRSS',       required=False, type=float,   default=1e-03, help='Learning Rate SS' )
+    parser.add_argument('--LRAS',       required=False, type=float,   default=1e-03, help='Learning Rate AS' )
     parser.add_argument('--LRe',       required=False, type=float,   default=1e-06, help='Learning Rate end' )
     parser.add_argument('--patience', required=False, type=int,   default=4,     help='Patience before reducing LR (ReduceLROnPlateau)' )
 
