@@ -207,8 +207,10 @@ def trainAS(dataloader,
     losses = AverageMeter()
 
     # switch to train mode
+    i = 0
     for param in model.parameters():
-        print(param)
+        print(i)
+        i += 1
     
     if train:
         model.train()
