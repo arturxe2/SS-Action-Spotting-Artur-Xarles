@@ -52,8 +52,8 @@ class Model(nn.Module):
         self.conv1Amask = nn.Conv1d(128, d, 1, stride=1, bias=False)
         
         #Masked tokens
-        self.mask_tokenV = nn.Parameter(torch.randn(d))
-        self.mask_tokenA = nn.Parameter(torch.randn(d))
+        self.mask_tokenV = nn.Parameter(torch.randn(8576))
+        self.mask_tokenA = nn.Parameter(torch.randn(128))
         
         encoder_layerV = nn.TransformerEncoderLayer(d_model = d, nhead = 8)
         self.encoderV = nn.TransformerEncoder(encoder_layerV, 2)
