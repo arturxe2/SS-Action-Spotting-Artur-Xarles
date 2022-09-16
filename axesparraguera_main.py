@@ -14,7 +14,7 @@ import os
 from datetime import datetime
 import time
 from loss import CLIP_loss
-from train import trainer
+from train import trainerSS, trainerAS
 
 torch.manual_seed(1)
 np.random.seed(1)
@@ -35,7 +35,7 @@ def main(args):
                              features_baidu = args.features_baidu,
                              features_audio = args.features_audio, 
                              split=["train"], framerate=args.framerate, chunk_size=args.chunk_size*args.framerate)
-            '''    
+               
             dataset_Valid = SoccerNetClips(path_baidu = args.baidu_path, 
                              path_audio = args.audio_path,  
                              features_baidu = args.features_baidu,
@@ -48,7 +48,7 @@ def main(args):
                              features_baidu = args.features_baidu,
                              features_audio = args.features_audio, 
                              split=["valid"], framerate=args.framerate, chunk_size=args.chunk_size*args.framerate)
-            '''
+            
     '''
     dataset_Test  = SoccerNetClipsTesting(path_baidu = args.baidu_path, 
                     path_audio = args.audio_path,
@@ -75,7 +75,7 @@ def main(args):
         train_loader = torch.utils.data.DataLoader(dataset_Train, 
                             batch_size=args.batch_size, shuffle=True,
                             num_workers=args.max_num_worker, pin_memory=True)
-        '''        
+               
         val_loader = torch.utils.data.DataLoader(dataset_Valid,
             batch_size=args.batch_size, shuffle=False,
             num_workers=args.max_num_worker, pin_memory=True)
@@ -84,7 +84,7 @@ def main(args):
         val_metric_loader = torch.utils.data.DataLoader(dataset_Valid_metric,
             batch_size=args.batch_size, shuffle=False,
             num_workers=args.max_num_worker, pin_memory=True)
-        '''
+        
 
     
 
@@ -102,10 +102,17 @@ def main(args):
         #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', verbose=True, patience=args.patience)
         
         # start training
-        trainer(train_loader, 
+        trainerSS(train_loader, 
                 model, optimizer, criterion,
                 model_name=args.model_name,
-                max_epochs=args.max_epochs)
+                max_epochs=args.max_epochsSS)
+        
+        trainerAS(train_loader,
+                  val_loader,
+                  val_loader,
+                  model, optimizer, criterion,
+                  model_name=args.model_name,
+                  max_epochs=args.max_epochsAS)
 
     # For the best model only
     checkpoint = torch.load(os.path.join("SSmodels", args.model_name, "model.pth.tar"))
@@ -172,7 +179,8 @@ if __name__ == '__main__':
     parser.add_argument('--audio_path', required=False, type=str, default='/data-local/data3-ssd/axesparraguera', help='path of audio features')
     parser.add_argument('--features_audio', required=False, type=str, default='audio_embeddings_2fps.npy', help='audio features name')
     
-    parser.add_argument('--max_epochs',   required=False, type=int,   default=100,     help='Maximum number of epochs' )
+    parser.add_argument('--max_epochsSS',   required=False, type=int,   default=50,     help='Maximum number of epochs for SS' )
+    parser.add_argument('--max_epochsAS',   required=False, type=int,   default=100,     help='Maximum number of epochs for AS' )
     parser.add_argument('--load_weights',   required=False, type=str,   default=None,     help='weights to load' )
     parser.add_argument('--model_name',   required=False, type=str,   default="Pooling",     help='name of the model to save' )
     parser.add_argument('--test_only',   required=False, action='store_true',  help='Perform testing only' )

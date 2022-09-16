@@ -12,19 +12,21 @@ import torch.nn as nn
 
 #Model class
 class Model(nn.Module):
-    def __init__(self, weights=None, d=512, chunk_size=10, framerate=2, model="SSModel"):
+    def __init__(self, weights=None, num_classes = 17, d=512, chunk_size=10, framerate=2, model="SSModel"):
         """
         INPUT: two Tensors of shape (batch_size,chunk_size*framerate,feature_size)
         OUTPUTS: two Tensors of shape (batch_size,d)
         """
 
         super(Model, self).__init__()
-
+        
+        self.num_classes = num_classes
         self.d = d
         self.chunk_size = chunk_size
         self.framerate = framerate
         self.model = model
         
+        #Self-supervised layers / parameters
         self.conv1V = nn.Conv1d(8576, d, 1, stride=1, bias=False)
         self.conv1A = nn.Conv1d(128, d, 1, stride=1, bias=False)
         
@@ -33,13 +35,17 @@ class Model(nn.Module):
         encoder_layerA = nn.TransformerEncoderLayer(d_model = d, nhead = 8)
         self.encoderA = nn.TransformerEncoder(encoder_layerA, 1)
         
-        
         self.clasV = nn.Parameter(torch.randn(d))
         self.clasA = nn.Parameter(torch.randn(d))
         
-        self.relu = nn.ReLU()
-        
         self.temperature = nn.Parameter(torch.randn(1))
+        
+        #Spotting layers
+        self.fc = nn.Linear(2*d, self.num_classes+1)
+        
+        #General functions
+        self.relu = nn.ReLU()
+        self.sigm = nn.Sigmoid()
 
         self.load_weights(weights=weights)
 
@@ -82,7 +88,8 @@ class Model(nn.Module):
         classV = torch.squeeze(inputsV[:, 0, :]) #(B x d)
         classA = torch.squeeze(inputsA[:, 0, :]) #(B x d)
         
-        embeddings = torch.cat((classV, classA), dim=1)
+        embeddings = torch.cat((classV, classA), dim=1) #(B x 2*d)
+        outputs = self.sigm(self.fc(embeddings))
         #logits = torch.mm(classV, torch.transpose(classA, 0, 1)) * torch.exp(self.temperature)
             
-        return classV, classA
+        return classV, classA, outputs

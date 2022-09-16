@@ -11,6 +11,8 @@ from tqdm import tqdm
 import numpy as np
 import logging
 import os
+from SoccerNet.Evaluation.utils import AverageMeter, EVENT_DICTIONARY_V2, INVERSE_EVENT_DICTIONARY_V2
+import json
 
 
 #Function to extract features of a clip
@@ -43,20 +45,26 @@ def feats2clip(feats, stride, clip_length, padding = "replicate_last", off=0):
 class SoccerNetClips(Dataset):
     def __init__(self, path_baidu = '/data-local/data3-ssd/axesparraguera', 
                  path_audio = '/data-local/data3-ssd/axesparraguera',  
+                 path_labels = "/data-net/datasets/SoccerNetv2/ResNET_TF2",
                  features_baidu = 'baidu_soccer_embeddings_2fps.npy',
                  features_audio = 'audio_embeddings_2fps.npy', 
                  split=["train"], framerate=2, chunk_size=20):
 
         self.listGames = getListGames(split)
         self.chunk_size = chunk_size
+        
+        self.dict_event = EVENT_DICTIONARY_V2
+        self.num_classes = 17
+        self.labels="Labels-v2.json"
 
         logging.info("Pre-compute clips")
         
         self.game_featsV = list()
         self.game_featsA = list()
+        self.game_labels = list()
 
 
-        stride = self.chunk_size * 4
+        stride = self.chunk_size * 100
         for game in tqdm(self.listGames):
             
             feat_half1V = np.load(os.path.join(path_baidu, game, "1_" + features_baidu))
@@ -102,16 +110,64 @@ class SoccerNetClips(Dataset):
             feat_half1A = feats2clip(torch.from_numpy(feat_half1A), stride=stride, clip_length=self.chunk_size) 
             feat_half2V = feats2clip(torch.from_numpy(feat_half2V), stride=stride, clip_length=self.chunk_size) 
             feat_half2A = feats2clip(torch.from_numpy(feat_half2A), stride=stride, clip_length=self.chunk_size) 
+            
+            
+            # Load labels
+            labels = json.load(open(os.path.join(path_labels, game, self.labels)))
+
+
+            label_half1 = np.zeros((feat_half1V.shape[0], self.num_classes+1))
+            label_half1[:,0]=1 # those are BG classes
+            label_half2 = np.zeros((feat_half2V.shape[0], self.num_classes+1))
+            label_half2[:,0]=1 # those are BG classes
+
+            for annotation in labels["annotations"]:
+
+                time = annotation["gameTime"]
+                event = annotation["label"]
+
+                half = int(time[0])
+
+                minutes = int(time[-5:-3])
+                seconds = int(time[-2::])
+                frame = framerate * ( seconds + 60 * minutes ) 
+
+                if event not in self.dict_event:
+                    continue
+                label = self.dict_event[event]
+
+                # if label outside temporal of view
+                if half == 1 and frame//stride>=label_half1.shape[0]:
+                    continue
+                if half == 2 and frame//stride>=label_half2.shape[0]:
+                    continue
+                a = frame // stride
+                if half == 1:
+                    for i in range(self.chunk_size // stride):
+                        label_half1[max(a - self.chunk_size // stride + 1 + i, 0)][0] = 0 # not BG anymore
+                        label_half1[max(a - self.chunk_size // stride + 1 + i, 0)][label+1] = 1
+                    #label_half1[max(a - self.chunk_size//stride + 1, 0) : (a + 1)][0] = 0 # not BG anymore
+
+                if half == 2:
+                    for i in range(self.chunk_size // stride):
+                        label_half2[max(a - self.chunk_size // stride + 1 + i, 0)][0] = 0 # not BG anymore
+                        label_half2[max(a - self.chunk_size // stride + 1 + i, 0)][label+1] = 1 # that's my class
+            
+            
 
             #Append visual and audio features of all games
             self.game_featsV.append(feat_half1V)
             self.game_featsA.append(feat_half1A)
             self.game_featsV.append(feat_half2V)
             self.game_featsA.append(feat_half2A)
+            
+            self.game_labels.append(label_half1)
+            self.game_labels.append(label_half2)
                         
         #Concatenate features
         self.game_featsV = np.concatenate(self.game_featsV)
         self.game_featsA = np.concatenate(self.game_featsA)
+        self.game_labels = np.concatenate(self.game_labels)
 
 
 
@@ -125,7 +181,7 @@ class SoccerNetClips(Dataset):
             clip_labels (np.array): clip of labels for the segmentation.
             clip_targets (np.array): clip of targets for the spotting.
         """
-        return self.game_featsV[index,:,:], self.game_featsA[index,:,:]
+        return self.game_featsV[index,:,:], self.game_featsA[index,:,:], self.game_labels[index, :]
 
     def __len__(self):
 
