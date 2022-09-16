@@ -111,6 +111,7 @@ def main(args):
                   val_loader,
                   val_loader,
                   model, optimizer, criterion,
+                  patience=args.patience,
                   model_name=args.model_name,
                   max_epochs=args.max_epochsAS)
 
