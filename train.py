@@ -6,12 +6,15 @@ Created on Thu Sep 15 15:34:41 2022
 """
 import logging
 import os
-from SoccerNet.Evaluation.utils import AverageMeter
 import time
 from tqdm import tqdm
 import torch
 import numpy as np
 from sklearn.metrics import average_precision_score
+from SoccerNet.Evaluation.utils import AverageMeter, EVENT_DICTIONARY_V2, INVERSE_EVENT_DICTIONARY_V2
+from SoccerNet.Evaluation.ActionSpotting import evaluate
+import json
+import zipfile
 
 #Define trainer
 def trainerSS(train_loader,
@@ -228,7 +231,7 @@ def trainAS(dataloader,
             # compute output
             classV, classA, outputs = model(featsV, featsA)
             
-            loss = criterion(outputs)
+            loss = criterion(labels, outputs)
         
             # measure accuracy and record loss
             losses.update(loss.item(), featsV.size(0) + featsA.size(0))
@@ -458,17 +461,16 @@ def testSpotting(dataloader, model, model_name, overwrite=True, NMS_window=30, N
     
                             prediction_data = dict()
                             prediction_data["gameTime"] = str(half+1) + " - " + str(minutes) + ":" + str(seconds)
-                            if dataloader.dataset.version == 2:
-                                prediction_data["label"] = INVERSE_EVENT_DICTIONARY_V2[l]
-                            else:
-                                prediction_data["label"] = INVERSE_EVENT_DICTIONARY_V1[l]
+
+                            prediction_data["label"] = INVERSE_EVENT_DICTIONARY_V2[l]
+
                             prediction_data["position"] = str(int((frame_index/framerate)*1000))
                             prediction_data["half"] = str(half+1)
                             prediction_data["confidence"] = str(confidence)
                             json_data["predictions"].append(prediction_data)
                     
-                os.makedirs(os.path.join("models", model_name, output_folder, game_ID), exist_ok=True)
-                with open(os.path.join("models", model_name, output_folder, game_ID, "results_spotting.json"), 'w') as output_file:
+                os.makedirs(os.path.join("ASmodels", model_name, output_folder, game_ID), exist_ok=True)
+                with open(os.path.join("ASmodels", model_name, output_folder, game_ID, "results_spotting.json"), 'w') as output_file:
                     json.dump(json_data, output_file, indent=4)
 
 

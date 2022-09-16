@@ -14,7 +14,7 @@ import os
 from datetime import datetime
 import time
 from loss import CLIP_loss, NLLLoss
-from train import trainerSS, trainerAS
+from train import trainerSS, trainerAS, test, testSpotting
 
 torch.manual_seed(1)
 np.random.seed(1)
@@ -125,7 +125,7 @@ def main(args):
     model.load_state_dict(checkpoint['state_dict'])
     
     
-    print(asdf)
+    #print(asdf)
 
     # test on multiple splits [test/challenge]
     for split in args.split_test:
