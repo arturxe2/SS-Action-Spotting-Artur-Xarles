@@ -286,6 +286,7 @@ def test(dataloader, model, model_name):
     all_outputs = []
     with tqdm(enumerate(dataloader), total=len(dataloader), ncols=120) as t:
         for i, (featsV, featsA, labels) in t:
+            print(labels)
             # measure data loading time
             data_time.update(time.time() - end)
             featsV = featsV.cuda()
@@ -331,7 +332,7 @@ def test(dataloader, model, model_name):
 #Define test spotting
 def testSpotting(dataloader, model, model_name, overwrite=True, NMS_window=30, NMS_threshold=0.5):
 
-    split = '_'.join(dataloader.dataset.split)
+    split = dataloader.dataset.split
     # print(split)
     output_results = os.path.join("models", model_name, f"results_spotting_{split}.zip")
     output_folder = f"outputs_{split}"
@@ -500,7 +501,7 @@ def testSpotting(dataloader, model, model_name, overwrite=True, NMS_window=30, N
 
         # zip folder
         zipResults(zip_path=output_results,
-                target_dir = os.path.join("models", model_name, output_folder),
+                target_dir = os.path.join("ASmodels", model_name, output_folder),
                 filename="results_spotting.json")
 
     if split == "challenge": 
