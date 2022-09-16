@@ -22,14 +22,21 @@ class CLIP_loss(torch.nn.Module):
         
     def forward(self, classV, classA):
         
-        #a.flatten()[1:].view(n-1, n+1)[:,:-1].reshape(n, n-1)
-        loss = InfoNCE()
+        batch_size, d = classV.shape
+        classV_aux = classV.expand(batch_size, batch_size, d)
+        negV = classV_aux.flatten()[d:].view(batch_size-1, batch_size+1, d)[:, :-1, :].reshape(batch_size, batch_size-1, d)
+        
+        classA_aux = classA.expand(batch_size, batch_size, d)
+        negA = classA_aux.flatten()[d:].view(batch_size-1, batch_size+1, d)[:, :-1, :].reshape(batch_size, batch_size-1, d)
+        
+        loss = InfoNCE(negative_mode='paired')
+        
         query = classV
         positive_key = classA
         
         #neg_samplesV = classV.reapeat()
         #negative_keys = 
-        return (loss(query, positive_key) + loss(positive_key, query)) / 2    
+        return (loss(query, positive_key, negA) + loss(positive_key, query, negV)) / 2    
     
     
 
