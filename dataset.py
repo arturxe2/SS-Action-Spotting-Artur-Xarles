@@ -318,11 +318,11 @@ class SoccerNetClipsTesting(Dataset):
                                      stride=1, off=int(self.chunk_size/2),
                                      clip_length=self.chunk_size)
         featA_half1 = feats2clip(torch.from_numpy(featA_half1),
-                                     stride=self.framerate, off=int(self.chunk_size/2),
-                                     clip_length=self.chunk_size * self.framerate)
+                                     stride=1, off=int(self.chunk_size/2),
+                                     clip_length=self.chunk_size)
         featA_half2 = feats2clip(torch.from_numpy(featA_half2),
-                                     stride=self.framerate, off=int(self.chunk_size/2),
-                                     clip_length=self.chunk_size * self.framerate)
+                                     stride=1, off=int(self.chunk_size/2),
+                                     clip_length=self.chunk_size)
             
         if featV_half1.shape[0] != featA_half1.shape[0]:
             featA_half1 = featA_half1[:featV_half1.shape[0]]
