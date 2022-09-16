@@ -138,7 +138,6 @@ def trainerAS(train_loader,
             evaluation_frequency=20):
 
     logging.info("start training")
-    training_stage = 0
 
     best_loss = 9e99
 
@@ -152,13 +151,13 @@ def trainerAS(train_loader,
 
         # train for one epoch
         loss_training = trainAS(train_loader, model, criterion, 
-                              optimizer, epoch + 1, training_stage = training_stage,
+                              optimizer, epoch + 1,
                               train=True)
 
         # evaluate on validation set
         loss_validation = trainAS(
             val_loader, model, criterion, optimizer, epoch + 1, 
-            training_stage = training_stage, train=False)
+            train=False)
 
         state = {
             'epoch': epoch + 1,

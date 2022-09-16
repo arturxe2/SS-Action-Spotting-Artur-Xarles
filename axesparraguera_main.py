@@ -7,7 +7,7 @@ Created on Thu Sep 15 11:57:38 2022
 import torch
 import numpy as np
 import logging
-from dataset import SoccerNetClips
+from dataset import SoccerNetClips, SoccerNetClipsTesting
 from model import Model
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import os
@@ -123,33 +123,22 @@ def main(args):
     print(asdf)
 
     # test on multiple splits [test/challenge]
-    n_ensemble_train = 0
     for split in args.split_test:
-        
-        ensemble = False
-        
-        if ensemble:
-            ensemble_method = 'MLP'
-            if (ensemble_method == 'MLP') & (n_ensemble_train == 0):
-                results = testSpottingEnsemble(args.model_name, 'valid', NMS_threshold=args.NMS_threshold, ensemble_method=ensemble_method)
-                n_ensemble_train += 1
-            results = testSpottingEnsemble(args.model_name, split, NMS_threshold=args.NMS_threshold, ensemble_method=ensemble_method)
-        
-        else:
-            dataset_Test  = SoccerNetClipsTesting(path_baidu = args.baidu_path, 
-                            path_audio = args.audio_path,
-                            path_labels = args.labels_path,
-                            features_baidu = args.features_baidu,
-                            features_audio = args.features_audio, 
-                            split=args.split_test, version=args.version, 
-                            framerate=args.framerate, chunk_size=args.chunk_size*args.framerate)
-            print('Test loader')
-            test_loader = torch.utils.data.DataLoader(dataset_Test,
-                batch_size=1, shuffle=False,
-                num_workers=1, pin_memory=True)
+         
+        dataset_Test  = SoccerNetClipsTesting(path_baidu = args.baidu_path, 
+                        path_audio = args.audio_path,
+                        path_labels = args.labels_path,
+                        features_baidu = args.features_baidu,
+                        features_audio = args.features_audio, 
+                        split=args.split_test, 
+                        framerate=args.framerate, chunk_size=args.chunk_size*args.framerate)
+        print('Test loader')
+        test_loader = torch.utils.data.DataLoader(dataset_Test,
+            batch_size=1, shuffle=False,
+            num_workers=1, pin_memory=True)
         
         
-            results = testSpotting(test_loader, model=model, model_name=args.model_name, NMS_window=args.NMS_window, NMS_threshold=args.NMS_threshold)
+        results = testSpotting(test_loader, model=model, model_name=args.model_name, NMS_window=args.NMS_window, NMS_threshold=args.NMS_threshold)
         if results is None:
             continue
 
@@ -180,7 +169,7 @@ if __name__ == '__main__':
     parser.add_argument('--audio_path', required=False, type=str, default='/data-local/data3-ssd/axesparraguera', help='path of audio features')
     parser.add_argument('--features_audio', required=False, type=str, default='audio_embeddings_2fps.npy', help='audio features name')
     
-    parser.add_argument('--max_epochsSS',   required=False, type=int,   default=50,     help='Maximum number of epochs for SS' )
+    parser.add_argument('--max_epochsSS',   required=False, type=int,   default=20,     help='Maximum number of epochs for SS' )
     parser.add_argument('--max_epochsAS',   required=False, type=int,   default=100,     help='Maximum number of epochs for AS' )
     parser.add_argument('--load_weights',   required=False, type=str,   default=None,     help='weights to load' )
     parser.add_argument('--model_name',   required=False, type=str,   default="Pooling",     help='name of the model to save' )

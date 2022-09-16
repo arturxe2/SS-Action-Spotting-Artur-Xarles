@@ -64,7 +64,7 @@ class SoccerNetClips(Dataset):
         self.game_labels = list()
 
 
-        stride = self.chunk_size * 100
+        stride = self.chunk_size * 200
         for game in tqdm(self.listGames):
             
             feat_half1V = np.load(os.path.join(path_baidu, game, "1_" + features_baidu))
@@ -186,3 +186,153 @@ class SoccerNetClips(Dataset):
     def __len__(self):
 
         return len(self.game_featsV)
+    
+    
+    
+#Class to generate the samples for the test part
+class SoccerNetClipsTesting(Dataset):
+    
+    
+    def __init__(self, path_baidu = '/data-local/data3-ssd/axesparraguera', 
+                 path_audio = '/data-local/data3-ssd/axesparraguera',  
+                 path_labels = "/data-net/datasets/SoccerNetv2/ResNET_TF2",
+                 features_baidu = 'baidu_soccer_embeddings_2fps.npy',
+                 features_audio = 'audio_embeddings_2fps.npy', 
+                 split=["test"], framerate=2, chunk_size=20):
+        
+        self.path_baidu = path_baidu
+        self.path_labels = path_labels
+        self.path_audio = path_audio
+        self.features_baidu = features_baidu
+        self.features_audio = features_audio
+        self.listGames = getListGames(split)
+        self.chunk_size = chunk_size
+        self.framerate = framerate
+        self.split = split
+
+
+        self.dict_event = EVENT_DICTIONARY_V2
+        self.num_classes = 17
+        self.labels="Labels-v2.json"
+
+        logging.info("Checking/Download features and labels locally")
+        #downloader = SoccerNetDownloader(path)
+        #for s in split:
+        #    if s == "challenge":
+        #        downloader.downloadGames(files=[f"1_{self.features}", f"2_{self.features}"], split=[s], verbose=False)
+        #    else:
+        #        downloader.downloadGames(files=[self.labels, f"1_{self.features}", f"2_{self.features}"], split=[s], verbose=False)
+
+
+    def __getitem__(self, index):
+        """
+        Args:
+            index (int): Index
+        Returns:
+            feat_half1 (np.array): features for the 1st half.
+            feat_half2 (np.array): features for the 2nd half.
+            label_half1 (np.array): labels (one-hot) for the 1st half.
+            label_half2 (np.array): labels (one-hot) for the 2nd half.
+        """
+        
+        
+
+        featV_half1 = np.load(os.path.join(self.path_baidu, self.listGames[index], "1_" + self.features_baidu))
+        featV_half1 = featV_half1.reshape(-1, featV_half1.shape[-1])    #for C3D non PCA
+        featV_half2 = np.load(os.path.join(self.path_baidu, self.listGames[index], "2_" + self.features_baidu))
+        featV_half2 = featV_half2.reshape(-1, featV_half2.shape[-1])    #for C3D non PCA
+        featA_half1 = np.load(os.path.join(self.path_audio, self.listGames[index], "1_" + self.features_audio))
+        featA_half1 = featA_half1.reshape(-1, featA_half1.shape[-1])    #for C3D non PCA
+        featA_half2 = np.load(os.path.join(self.path_audio, self.listGames[index], "2_" + self.features_audio))
+        featA_half2 = featA_half2.reshape(-1, featA_half2.shape[-1])    #for C3D non PCA
+
+            
+        label_half1 = np.zeros((featV_half1.shape[0], self.num_classes))
+        label_half2 = np.zeros((featV_half2.shape[0], self.num_classes))
+        
+        # check if annoation exists
+        if os.path.exists(os.path.join(self.path_labels, self.listGames[index], self.labels)):
+        
+            labels = json.load(open(os.path.join(self.path_labels, self.listGames[index], self.labels)))
+            for annotation in labels["annotations"]:
+
+                time = annotation["gameTime"]
+                event = annotation["label"]
+
+                half = int(time[0])
+
+                minutes = int(time[-5:-3])
+                seconds = int(time[-2::])
+                frame = self.framerate * ( seconds + 60 * minutes ) 
+
+                if event not in self.dict_event:
+                    continue
+                label = self.dict_event[event]
+
+                value = 1
+                if "visibility" in annotation.keys():
+                    if annotation["visibility"] == "not shown":
+                        value = -1
+
+                if half == 1:
+                    frame = min(frame, featV_half1.shape[0]-1)
+                    label_half1[frame][label] = value
+    
+                if half == 2:
+                    frame = min(frame, featV_half2.shape[0]-1)
+                    label_half2[frame][label] = value
+        
+            
+        #Check same size Visual and Audio features
+        
+        #Visual features bigger than audio features
+        if featV_half1.shape[0] > featA_half1.shape[0]:
+            featA_half1_aux = np.zeros((featV_half1.shape[0], featA_half1.shape[1]))
+            featA_half1_aux[:featA_half1.shape[0]] = featA_half1
+            featA_half1_aux[featA_half1.shape[0]:] = featA_half1[featA_half1.shape[0]-1]
+            featA_half1 = featA_half1_aux
+            
+        if featV_half2.shape[0] > featA_half2.shape[0]:
+            featA_half2_aux = np.zeros((featV_half2.shape[0], featA_half2.shape[1]))
+            featA_half2_aux[:featA_half2.shape[0]] = featA_half2
+            featA_half2_aux[featA_half2.shape[0]:] = featA_half2[featA_half2.shape[0]-1]
+            featA_half2 = featA_half2_aux
+            
+        #Audio features bigger than visual features
+        if featA_half1.shape[0] > featV_half1.shape[0]:
+            featV_half1_aux = np.zeros((featA_half1.shape[0], featV_half1.shape[1]))
+            featV_half1_aux[:featV_half1.shape[0]] = featV_half1
+            featV_half1_aux[featV_half1.shape[0]:] = featV_half1[featV_half1.shape[0]-1]
+            featV_half1 = featV_half1_aux
+            
+        if featA_half2.shape[0] > featV_half2.shape[0]:
+            featV_half2_aux = np.zeros((featA_half2.shape[0], featV_half2.shape[1]))
+            featV_half2_aux[:featV_half2.shape[0]] = featV_half2
+            featV_half2_aux[featV_half2.shape[0]:] = featV_half2[featV_half2.shape[0]-1]
+            featV_half2 = featV_half2_aux   
+            
+        featV_half1 = feats2clip(torch.from_numpy(featV_half1),
+                                     stride=1, off=int(self.chunk_size/2),
+                                     clip_length=self.chunk_size)
+        featV_half2 = feats2clip(torch.from_numpy(featV_half2),
+                                     stride=1, off=int(self.chunk_size/2),
+                                     clip_length=self.chunk_size)
+        featA_half1 = feats2clip(torch.from_numpy(featA_half1),
+                                     stride=self.framerate, off=int(self.chunk_size/2),
+                                     clip_length=self.chunk_size * self.framerate)
+        featA_half2 = feats2clip(torch.from_numpy(featA_half2),
+                                     stride=self.framerate, off=int(self.chunk_size/2),
+                                     clip_length=self.chunk_size * self.framerate)
+            
+        if featV_half1.shape[0] != featA_half1.shape[0]:
+            featA_half1 = featA_half1[:featV_half1.shape[0]]
+        if featV_half2.shape[0] != featA_half2.shape[0]:
+            featA_half2 = featA_half2[:featV_half2.shape[0]]
+            
+        return self.listGames[index], featV_half1, featA_half1, featV_half2, featA_half2, label_half1, label_half2
+
+        
+        
+
+    def __len__(self):
+        return len(self.listGames)
