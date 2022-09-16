@@ -155,7 +155,7 @@ def trainerAS(train_loader,
         
         #Unfreeze final layers
         model.fc.requires_grad_(True)
-        model.encoderM.requires_grad(True)
+        model.encoderM.requires_grad_(True)
         model.clasM.requires_grad_(True)
         
     
