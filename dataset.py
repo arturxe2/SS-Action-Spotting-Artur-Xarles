@@ -39,6 +39,8 @@ def feats2clip(feats, stride, clip_length, padding = "replicate_last", off=0):
         # idx[-1] = torch.arange(clip_length)+feats.shape[0]-clip_length
     # print(idx)
     print(len(idx))
+    f = feats[idx,...]
+    print(f.shape)
     return feats[idx,...]
 
 
