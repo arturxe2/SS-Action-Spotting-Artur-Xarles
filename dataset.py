@@ -103,7 +103,9 @@ class SoccerNetClips(Dataset):
                 feat_half2V_aux = np.zeros((feat_half2A.shape[0], feat_half2V.shape[1]))
                 feat_half2V_aux[:feat_half2V.shape[0]] = feat_half2V
                 feat_half2V_aux[feat_half2V.shape[0]:] = feat_half2V[feat_half2V.shape[0]-1]
-                feat_half2V = feat_half2V_aux                    
+                feat_half2V = feat_half2V_aux     
+                
+            print(feat_half1V.shape)
 
                 
             #Generate clips from features
