@@ -108,14 +108,17 @@ class SoccerNetClips(Dataset):
                 feat_half2V_aux[feat_half2V.shape[0]:] = feat_half2V[feat_half2V.shape[0]-1]
                 feat_half2V = feat_half2V_aux     
                 
-            shape2 = (feat_half2V.shape)
 
                 
             #Generate clips from features
             feat_half1V = feats2clip(torch.from_numpy(feat_half1V), stride=stride, clip_length=self.chunk_size) 
+            print(feat_half1V.shape)
             feat_half1A = feats2clip(torch.from_numpy(feat_half1A), stride=stride, clip_length=self.chunk_size) 
+            print(feat_half1A.shape)
             feat_half2V = feats2clip(torch.from_numpy(feat_half2V), stride=stride, clip_length=self.chunk_size) 
+            print(feat_half2V.shape)
             feat_half2A = feats2clip(torch.from_numpy(feat_half2A), stride=stride, clip_length=self.chunk_size) 
+            print(feat_half2A.shape)
             
             
             # Load labels
