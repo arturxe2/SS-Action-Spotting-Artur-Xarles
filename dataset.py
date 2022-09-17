@@ -113,6 +113,8 @@ class SoccerNetClips(Dataset):
             feat_half2V = feats2clip(torch.from_numpy(feat_half2V), stride=stride, clip_length=self.chunk_size) 
             feat_half2A = feats2clip(torch.from_numpy(feat_half2A), stride=stride, clip_length=self.chunk_size) 
             
+            print(feat_half1V.shape)
+            print(feat_half1A.shape)
             
             # Load labels
             labels = json.load(open(os.path.join(path_labels, game, self.labels)))
