@@ -76,8 +76,8 @@ class SoccerNetClips(Dataset):
             feat_half2A = np.load(os.path.join(path_audio, game, "2_" + features_audio))
             feat_half2A = feat_half2A.reshape(-1, feat_half2A.shape[-1])
                 
-            print(featV_half1.shape)
-            print(featA_half1.shape)
+            print(feat_half1V.shape)
+            print(feat_half1A.shape)
             #Check same size Visual and Audio features
             
             #Visual features bigger than audio features
