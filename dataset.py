@@ -38,9 +38,7 @@ def feats2clip(feats, stride, clip_length, padding = "replicate_last", off=0):
         # Not replicate last, but take the clip closest to the end of the video
         # idx[-1] = torch.arange(clip_length)+feats.shape[0]-clip_length
     # print(idx)
-    print(len(idx))
-    f = feats[idx,...]
-    print(f.shape)
+
     return feats[idx,...]
 
 
@@ -112,13 +110,10 @@ class SoccerNetClips(Dataset):
                 
             #Generate clips from features
             feat_half1V = feats2clip(torch.from_numpy(feat_half1V), stride=stride, clip_length=self.chunk_size) 
-            print(feat_half1V.shape)
             feat_half1A = feats2clip(torch.from_numpy(feat_half1A), stride=stride, clip_length=self.chunk_size) 
-            print(feat_half1A.shape)
             feat_half2V = feats2clip(torch.from_numpy(feat_half2V), stride=stride, clip_length=self.chunk_size) 
-            print(feat_half2V.shape)
             feat_half2A = feats2clip(torch.from_numpy(feat_half2A), stride=stride, clip_length=self.chunk_size) 
-            print(feat_half2A.shape)
+
             
             
             # Load labels
@@ -152,12 +147,6 @@ class SoccerNetClips(Dataset):
                 if half == 2 and frame//stride>=label_half2.shape[0]:
                     continue
                 a = frame // stride
-                #print(frame)
-                #print(stride)
-                #print(a)
-                #print(half)
-                #print(label_half1.shape)
-                #print(shape2)
                 
                 if half == 1:
                     if self.chunk_size >= stride:
@@ -168,7 +157,6 @@ class SoccerNetClips(Dataset):
                         
                     else:
                         a2 = (frame - self.chunk_size) // stride
-                        #print(a2)
                         if a != a2:
                             label_half1[a][0] = 0
                             label_half1[a][label+1] = 1
@@ -181,10 +169,9 @@ class SoccerNetClips(Dataset):
                             
                     else:
                         a2 = (frame - self.chunk_size) // stride
-                        #print(a2)
                         if a != a2:
-                            label_half1[a][0] = 0
-                            label_half1[a][label+1] = 1
+                            label_half2[a][0] = 0
+                            label_half2[a][label+1] = 1
 
             
 
