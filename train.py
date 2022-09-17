@@ -286,7 +286,6 @@ def test(dataloader, model, model_name):
     all_outputs = []
     with tqdm(enumerate(dataloader), total=len(dataloader), ncols=120) as t:
         for i, (featsV, featsA, labels) in t:
-            print(labels)
             # measure data loading time
             data_time.update(time.time() - end)
             featsV = featsV.cuda()
