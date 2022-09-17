@@ -76,6 +76,8 @@ class SoccerNetClips(Dataset):
             feat_half2A = np.load(os.path.join(path_audio, game, "2_" + features_audio))
             feat_half2A = feat_half2A.reshape(-1, feat_half2A.shape[-1])
                 
+            print(featV_half1.shape)
+            print(featA_half1.shape)
             #Check same size Visual and Audio features
             
             #Visual features bigger than audio features
@@ -246,8 +248,7 @@ class SoccerNetClipsTesting(Dataset):
         featA_half1 = featA_half1.reshape(-1, featA_half1.shape[-1])    #for C3D non PCA
         featA_half2 = np.load(os.path.join(self.path_audio, self.listGames[index], "2_" + self.features_audio))
         featA_half2 = featA_half2.reshape(-1, featA_half2.shape[-1])    #for C3D non PCA
-        print(featV_half1.shape)
-        print(featA_half1.shape)
+
 
             
         label_half1 = np.zeros((featV_half1.shape[0], self.num_classes))
