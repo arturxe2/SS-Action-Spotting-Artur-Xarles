@@ -65,7 +65,7 @@ class SoccerNetClips(Dataset):
         self.game_labels = list()
 
 
-        stride = self.chunk_size * 10
+        stride = self.chunk_size * 2
         for game in tqdm(self.listGames):
             
             feat_half1V = np.load(os.path.join(path_baidu, game, "1_" + features_baidu))
@@ -172,9 +172,6 @@ class SoccerNetClips(Dataset):
                         if a != a2:
                             label_half2[a][0] = 0
                             label_half2[a][label+1] = 1
-
-            print(label_half1)
-            print(label_half2)
 
             #Append visual and audio features of all games
             self.game_featsV.append(feat_half1V)
@@ -359,5 +356,3 @@ class SoccerNetClipsTesting(Dataset):
     def __len__(self):
         return len(self.listGames)
     
-    
-a = SoccerNetClips()
