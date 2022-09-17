@@ -38,6 +38,7 @@ def feats2clip(feats, stride, clip_length, padding = "replicate_last", off=0):
         # Not replicate last, but take the clip closest to the end of the video
         # idx[-1] = torch.arange(clip_length)+feats.shape[0]-clip_length
     # print(idx)
+    print(len(idx))
     return feats[idx,...]
 
 
@@ -146,12 +147,12 @@ class SoccerNetClips(Dataset):
                 if half == 2 and frame//stride>=label_half2.shape[0]:
                     continue
                 a = frame // stride
-                print(frame)
-                print(stride)
-                print(a)
-                print(half)
-                print(label_half1.shape)
-                print(shape2)
+                #print(frame)
+                #print(stride)
+                #print(a)
+                #print(half)
+                #print(label_half1.shape)
+                #print(shape2)
                 
                 if half == 1:
                     if self.chunk_size >= stride:
@@ -162,7 +163,7 @@ class SoccerNetClips(Dataset):
                         
                     else:
                         a2 = (frame - self.chunk_size) // stride
-                        print(a2)
+                        #print(a2)
                         if a != a2:
                             label_half1[a][0] = 0
                             label_half1[a][label+1] = 1
@@ -175,7 +176,7 @@ class SoccerNetClips(Dataset):
                             
                     else:
                         a2 = (frame - self.chunk_size) // stride
-                        print(a2)
+                        #print(a2)
                         if a != a2:
                             label_half1[a][0] = 0
                             label_half1[a][label+1] = 1
