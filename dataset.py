@@ -173,7 +173,8 @@ class SoccerNetClips(Dataset):
                             label_half2[a][0] = 0
                             label_half2[a][label+1] = 1
 
-            
+            print(label_half1)
+            print(label_half2)
 
             #Append visual and audio features of all games
             self.game_featsV.append(feat_half1V)
