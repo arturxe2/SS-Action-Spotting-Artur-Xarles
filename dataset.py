@@ -105,7 +105,7 @@ class SoccerNetClips(Dataset):
                 feat_half2V_aux[feat_half2V.shape[0]:] = feat_half2V[feat_half2V.shape[0]-1]
                 feat_half2V = feat_half2V_aux     
                 
-            print(feat_half1V.shape)
+            shape2 = (feat_half1V.shape)
 
                 
             #Generate clips from features
@@ -151,6 +151,7 @@ class SoccerNetClips(Dataset):
                 print(a)
                 print(half)
                 print(label_half1.shape)
+                print(shape2)
                 
                 if half == 1:
                     if self.chunk_size >= stride:
