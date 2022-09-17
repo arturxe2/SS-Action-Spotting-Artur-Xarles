@@ -112,8 +112,6 @@ class SoccerNetClips(Dataset):
             feat_half2V = feats2clip(torch.from_numpy(feat_half2V), stride=stride, clip_length=self.chunk_size) 
             feat_half2A = feats2clip(torch.from_numpy(feat_half2A), stride=stride, clip_length=self.chunk_size) 
             
-            print(feat_half1V.shape)
-            print(feat_half1A.shape)
             
             # Load labels
             labels = json.load(open(os.path.join(path_labels, game, self.labels)))
@@ -135,12 +133,10 @@ class SoccerNetClips(Dataset):
                 minutes = int(time[-5:-3])
                 seconds = int(time[-2::])
                 frame = framerate * ( seconds + 60 * minutes ) 
-                print(frame)
 
                 if event not in self.dict_event:
                     continue
                 label = self.dict_event[event]
-                print(label)
 
                 # if label outside temporal of view
                 if half == 1 and frame//stride>=label_half1.shape[0]:
@@ -148,6 +144,12 @@ class SoccerNetClips(Dataset):
                 if half == 2 and frame//stride>=label_half2.shape[0]:
                     continue
                 a = frame // stride
+                print(frame)
+                print(stride)
+                print(a)
+                print(half)
+                print(label_half1.shape)
+                
                 if half == 1:
                     if self.chunk_size >= stride:
                         for i in range(self.chunk_size // stride):
@@ -157,6 +159,7 @@ class SoccerNetClips(Dataset):
                         
                     else:
                         a2 = (frame - self.chunk_size) // stride
+                        print(a2)
                         if a != a2:
                             label_half1[a][0] = 0
                             label_half1[a][label+1] = 1
@@ -169,11 +172,11 @@ class SoccerNetClips(Dataset):
                             
                     else:
                         a2 = (frame - self.chunk_size) // stride
+                        print(a2)
                         if a != a2:
                             label_half1[a][0] = 0
                             label_half1[a][label+1] = 1
-            print(label_half1)
-            print(label_half2)
+
             
 
             #Append visual and audio features of all games
