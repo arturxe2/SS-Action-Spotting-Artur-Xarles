@@ -131,17 +131,16 @@ class SoccerNetClips(Dataset):
 
                 half = int(time[0])
                 
-                print(time)
-                print(event)
-                print(half)
 
                 minutes = int(time[-5:-3])
                 seconds = int(time[-2::])
                 frame = framerate * ( seconds + 60 * minutes ) 
+                print(frame)
 
                 if event not in self.dict_event:
                     continue
                 label = self.dict_event[event]
+                print(label)
 
                 # if label outside temporal of view
                 if half == 1 and frame//stride>=label_half1.shape[0]:
@@ -150,15 +149,29 @@ class SoccerNetClips(Dataset):
                     continue
                 a = frame // stride
                 if half == 1:
-                    for i in range(self.chunk_size // stride):
-                        label_half1[max(a - self.chunk_size // stride + 1 + i, 0)][0] = 0 # not BG anymore
-                        label_half1[max(a - self.chunk_size // stride + 1 + i, 0)][label+1] = 1
-                    #label_half1[max(a - self.chunk_size//stride + 1, 0) : (a + 1)][0] = 0 # not BG anymore
+                    if self.chunk_size >= stride:
+                        for i in range(self.chunk_size // stride):
+                            label_half1[max(a - self.chunk_size // stride + 1 + i, 0)][0] = 0 # not BG anymore
+                            label_half1[max(a - self.chunk_size // stride + 1 + i, 0)][label+1] = 1
+                        #label_half1[max(a - self.chunk_size//stride + 1, 0) : (a + 1)][0] = 0 # not BG anymore
+                        
+                    else:
+                        a2 = (frame - self.chunk_size) // stride
+                        if a != a2:
+                            label_half1[a][0] = 0
+                            label_half1[a][label+1] = 1
 
                 if half == 2:
-                    for i in range(self.chunk_size // stride):
-                        label_half2[max(a - self.chunk_size // stride + 1 + i, 0)][0] = 0 # not BG anymore
-                        label_half2[max(a - self.chunk_size // stride + 1 + i, 0)][label+1] = 1 # that's my class
+                    if self.chunk_size >= stride:
+                        for i in range(self.chunk_size // stride):
+                            label_half2[max(a - self.chunk_size // stride + 1 + i, 0)][0] = 0 # not BG anymore
+                            label_half2[max(a - self.chunk_size // stride + 1 + i, 0)][label+1] = 1 # that's my class
+                            
+                    else:
+                        a2 = (frame - self.chunk_size) // stride
+                        if a != a2:
+                            label_half1[a][0] = 0
+                            label_half1[a][label+1] = 1
             print(label_half1)
             print(label_half2)
             
