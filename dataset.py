@@ -152,7 +152,8 @@ class SoccerNetClips(Dataset):
                     for i in range(self.chunk_size // stride):
                         label_half2[max(a - self.chunk_size // stride + 1 + i, 0)][0] = 0 # not BG anymore
                         label_half2[max(a - self.chunk_size // stride + 1 + i, 0)][label+1] = 1 # that's my class
-            
+            print(label_half1)
+            print(label_half2)
             
 
             #Append visual and audio features of all games
@@ -336,3 +337,6 @@ class SoccerNetClipsTesting(Dataset):
 
     def __len__(self):
         return len(self.listGames)
+    
+    
+a = SoccerNetClips()
