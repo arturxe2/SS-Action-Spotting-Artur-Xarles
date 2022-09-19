@@ -48,8 +48,9 @@ class Model(nn.Module):
         #Self-supervised layers / parameters
         self.conv1V = nn.Conv1d(8576, d, 1, stride=1, bias=False)
         self.conv1A = nn.Conv1d(128, d, 1, stride=1, bias=False)
-        self.conv1Vmask = nn.Conv1d(8576, d, 1, stride=1, bias=False)
-        self.conv1Amask = nn.Conv1d(128, d, 1, stride=1, bias=False)
+        self.conv1Vmask = copy.deepcopy(self.conv1V)
+        self.conv1Amask = copy.deepcopy(self.conv1A)
+        
         
         #Masked tokens
         self.mask_tokenV = nn.Parameter(torch.randn(8576))
@@ -75,6 +76,8 @@ class Model(nn.Module):
 
         
         #Not gradient in these layers
+        self.conv1Vmask.requires_grad_(False)
+        self.conv1Amask.requires_grad_(False)
         self.encoderVmask.requires_grad_(False)
         self.encoderAmask.requires_grad_(False)
         self.clasVmask.requires_grad_(False)
@@ -171,7 +174,7 @@ class Model(nn.Module):
         Apreds = Apreds[:, :, ids_maskA]
         
         
-        embeddings = torch.cat((embeddingsV, embeddingsA), dim=1) #(B x 2*(chunk_size * framerate) x d)
+        embeddings = torch.cat((embeddingsVmask, embeddingsAmask), dim=1) #(B x 2*(chunk_size * framerate) x d)
         
         #Class token to size [B x 1 x d]
         clasM = torch.unsqueeze(self.clasM.repeat(embeddings.shape[0], 1), dim=1) 
@@ -185,4 +188,4 @@ class Model(nn.Module):
         outputs = self.sigm(self.fc(classM))
         #logits = torch.mm(classV, torch.transpose(classA, 0, 1)) * torch.exp(self.temperature)
             
-        return classV, classA, Vreal, Vpreds, Areal, Apreds, outputs
+        return classVmask, classAmask, Vreal, Vpreds, Areal, Apreds, outputs
