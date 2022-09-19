@@ -27,7 +27,7 @@ def trainerSS(train_loader,
             max_epochs=1000,
             momentum=0.99):
 
-    logging.info("start training")
+    logging.info("start training self-supervised")
     training_stage = 0
 
     best_loss = 9e99
@@ -78,7 +78,8 @@ def trainSS(dataloader,
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
-
+    
+    
     # switch to train mode
     if train:
         model.train()
@@ -115,6 +116,10 @@ def trainSS(dataloader,
                 optimizer.step()
                 
                 #Momentum step
+                for MaskVConv, VConv in zip(model.conv1Vmask.parameters(), model.conv1V.parameters()):
+                    MaskVConv.data.copy_(momentum * VConv.data + (1-momentum) * MaskVConv.data)
+                for MaskAConv, AConv in zip(model.conv1Amask.parameters(), model.conv1A.parameters()):
+                    MaskAConv.data.copy_(momentum * AConv.data + (1-momentum) * MaskAConv.data)
                 for MaskVencoder, Vencoder in zip(model.encoderVmask.parameters(), model.encoderV.parameters()):
                     MaskVencoder.data.copy_(momentum * Vencoder.data + (1-momentum) * MaskVencoder.data)
                 for MaskAencoder, Aencoder in zip(model.encoderAmask.parameters(), model.encoderA.parameters()):
@@ -154,7 +159,7 @@ def trainerAS(train_loader,
             evaluation_frequency=20,
             freeze = True):
 
-    logging.info("start training")
+    logging.info("start training action spotting")
 
     best_loss = 9e99
 
