@@ -165,10 +165,10 @@ class Model(nn.Module):
         Vpreds = self.relu(self.convMV(embeddingsVmask.permute((0, 2, 1)))) #(B x d x (chunk_size * framerate))
         Apreds = self.relu(self.convMA(embeddingsAmask.permute((0, 2, 1)))) #(B x d x (chunk_size * framerate))
         
-        Vreal = embeddingsV[:, ids_maskV, :]
-        Vpreds = Vpreds[:, ids_maskV, :]
-        Areal = embeddingsA[:, ids_maskA, :]
-        Apreds = Apreds[:, ids_maskA, :]
+        Vreal = embeddingsV.permute((0, 2, 1))[:, :, ids_maskV]
+        Vpreds = Vpreds[:, :, ids_maskV]
+        Areal = embeddingsA.permute((0, 2, 1))[:, :, ids_maskA]
+        Apreds = Apreds[:, :, ids_maskA]
         
         
         embeddings = torch.cat((embeddingsV, embeddingsA), dim=1) #(B x 2*(chunk_size * framerate) x d)
