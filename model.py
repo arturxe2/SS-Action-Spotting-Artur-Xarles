@@ -139,8 +139,8 @@ class Model(nn.Module):
         inputsVmask = torch.clone(inputsV) 
         inputsAmask = torch.clone(inputsA)
         
-        inputsVmask, ids_maskV = mask_tokens(inputsVmask, self.mask_tokenV, 0.4)
-        inputsAmask, ids_maskA = mask_tokens(inputsAmask, self.mask_tokenA, 0.4)
+        inputsVmask, ids_maskV = mask_tokens(inputsVmask, self.mask_tokenV, 0.7)
+        inputsAmask, ids_maskA = mask_tokens(inputsAmask, self.mask_tokenA, 0.7)
         
         #Permutation
         inputsV = inputsV.permute((0, 2, 1)) #(B x n_features x chunk_size * framerate)
