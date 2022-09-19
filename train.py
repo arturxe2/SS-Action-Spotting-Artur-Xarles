@@ -66,7 +66,8 @@ def trainerSS(train_loader,
 #Define train
 def trainSS(dataloader,
           model,
-          criterion,
+          criterionVA,
+          criterionMask,
           optimizer,
           epoch,
           train=False):
@@ -95,9 +96,9 @@ def trainSS(dataloader,
             featsA = featsA.cuda()
             labels = labels.cuda()
             # compute output
-            classV, classA, outputs = model(featsV, featsA)
+            classV, classA, Vreal, Vpreds, Areal, Apreds, outputs = model(featsV, featsA)
             
-            loss = criterion(classV, classA)
+            loss = criterionVA(classV, classA) + criterionMask(Vreal, Vpreds, Areal, Apreds)
         
             # measure accuracy and record loss
             losses.update(loss.item(), featsV.size(0) + featsA.size(0))
@@ -242,7 +243,7 @@ def trainAS(dataloader,
             featsA = featsA.cuda()
             labels = labels.cuda()
             # compute output
-            classV, classA, outputs = model(featsV, featsA)
+            classV, classA, Vreal, Vpreds, Areal, Apreds, outputs = model(featsV, featsA)
             
             loss = criterion(labels, outputs)
         

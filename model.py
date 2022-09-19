@@ -15,10 +15,10 @@ import copy
 def mask_tokens(features, mask_token, p_mask = 0.20):
     n_B, n_T, d = features.shape
     ids = []
+    
+    n_masks = max(1, (np.random.uniform(size = n_T) < p_mask).sum())
+    id_masks = np.random.choice(np.arange(n_T), n_masks)
     for b in range(n_B):
-        n_masks = max(1, (np.random.uniform(size = n_T) < p_mask).sum())
-        id_masks = np.random.choice(np.arange(n_T), n_masks)
-        ids.append(id_masks.tolist())
         for id_mask in id_masks:
             option = np.random.uniform()
             if option < 0.8:
@@ -26,7 +26,7 @@ def mask_tokens(features, mask_token, p_mask = 0.20):
             elif option < 0.9:
                 change_token = np.random.choice(np.arange(n_T), 1)
                 features[b, id_mask, :] = features[b, change_token, :]
-    return features, ids
+    return features, id_masks
 
 #Model class
 class Model(nn.Module):
@@ -68,6 +68,11 @@ class Model(nn.Module):
         self.clasA = nn.Parameter(torch.randn(d))
         self.clasVmask = copy.deepcopy(self.clasV)
         self.clasAmask = copy.deepcopy(self.clasA)
+        
+        #Mask predictors
+        self.convMV = nn.Conv1d(d, d, 1, stride=1, bias=False)
+        self.convMA = nn.Conv1d(d, d, 1, stride=1, bias=False)
+
         
         #Not gradient in these layers
         self.encoderVmask.requires_grad_(False)
@@ -153,7 +158,18 @@ class Model(nn.Module):
         
         embeddingsV = inputsV[:, 1:, :] #(B x (chunk_size * framerate) x d)
         embeddingsA = inputsA[:, 1:, :] #(B x (chunk_size * framerate) x d)
-        #embeddingsVmask
+        embeddingsVmask = inputsVmask[:, 1:, :]
+        embeddingsAmask = inputsAmask[:, 1:, :]
+        
+        #Mask predictions
+        Vpreds = self.relu(self.convMV(embeddingsVmask.permute((0, 2, 1)))) #(B x d x (chunk_size * framerate))
+        Apreds = self.relu(self.convMA(embeddingsAmask.permute((0, 2, 1)))) #(B x d x (chunk_size * framerate))
+        
+        Vreal = embeddingsV[:, ids_maskV, :]
+        Vpreds = Vpreds[:, ids_maskV, :]
+        Areal = embeddingsA[:, ids_maskA, :]
+        Apreds = Apreds[:, ids_maskA, :]
+        
         
         embeddings = torch.cat((embeddingsV, embeddingsA), dim=1) #(B x 2*(chunk_size * framerate) x d)
         
@@ -169,4 +185,4 @@ class Model(nn.Module):
         outputs = self.sigm(self.fc(classM))
         #logits = torch.mm(classV, torch.transpose(classA, 0, 1)) * torch.exp(self.temperature)
             
-        return classV, classA, outputs
+        return classV, classA, Vreal, Vpreds, Areal, Apreds, outputs

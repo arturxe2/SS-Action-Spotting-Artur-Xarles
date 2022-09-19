@@ -14,6 +14,16 @@ class NLLLoss(torch.nn.Module):
 
     def forward(self, labels, output):
         return torch.mean(torch.mean(labels * -torch.log(output) + (1 - labels) * -torch.log(1 - output)))
+    
+class MaskLoss(torch.nn.Module):
+    def __init__(self):
+        super(MaskLoss, self).__init__()
+        self.cos = nn.CosineSimilarity(dim=1, eps=1e-6)
+        
+    def forward(self, Vreal, Vpreds, Areal, Apreds):
+        lossV = (-self.cos(Vreal, Vpreds)).sum()
+        lossA = (-self.cos(Areal, Apreds)).sum()
+        return lossV + lossA
 
 class CLIP_loss(torch.nn.Module):
     def __init__(self):
