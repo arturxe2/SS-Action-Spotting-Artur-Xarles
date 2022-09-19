@@ -139,8 +139,8 @@ class Model(nn.Module):
         inputsVmask = torch.clone(inputsV) 
         inputsAmask = torch.clone(inputsA)
         
-        inputsVmask, ids_maskV = mask_tokens(inputsVmask, self.mask_tokenV, 0.7)
-        inputsAmask, ids_maskA = mask_tokens(inputsAmask, self.mask_tokenA, 0.7)
+        inputsVmask, ids_maskV = mask_tokens(inputsVmask, self.mask_tokenV, 0.2)
+        inputsAmask, ids_maskA = mask_tokens(inputsAmask, self.mask_tokenA, 0.2)
         
         #Permutation
         inputsV = inputsV.permute((0, 2, 1)) #(B x n_features x chunk_size * framerate)
@@ -206,8 +206,8 @@ class Model(nn.Module):
         embeddingsAmask = inputsAmask[:, 1:, :]
         
         #Mask predictions
-        Vpreds = self.relu(self.convMV(embeddingsVmask.permute((0, 2, 1)))) #(B x d x (chunk_size * framerate))
-        Apreds = self.relu(self.convMA(embeddingsAmask.permute((0, 2, 1)))) #(B x d x (chunk_size * framerate))
+        Vpreds = (self.convMV(embeddingsVmask.permute((0, 2, 1)))) #(B x d x (chunk_size * framerate))
+        Apreds = (self.convMA(embeddingsAmask.permute((0, 2, 1)))) #(B x d x (chunk_size * framerate))
         
         Vreal = embeddingsV.permute((0, 2, 1))[:, :, ids_maskV]
         Vpreds = Vpreds[:, :, ids_maskV]
