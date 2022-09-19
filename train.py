@@ -25,7 +25,7 @@ def trainerSS(train_loader,
             criterionMask,
             model_name,
             max_epochs=1000,
-            momentum=0.99):
+            momentum=0.999):
 
     logging.info("start training self-supervised")
     training_stage = 0
@@ -72,7 +72,7 @@ def trainSS(dataloader,
           criterionMask,
           optimizer,
           epoch,
-          momentum = 0.99,
+          momentum = 0.999,
           train=False):
 
     batch_time = AverageMeter()
