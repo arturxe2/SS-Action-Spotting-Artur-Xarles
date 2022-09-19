@@ -20,10 +20,9 @@ class MaskLoss(torch.nn.Module):
         super(MaskLoss, self).__init__()
         self.cos = nn.CosineSimilarity(dim=1, eps=1e-6)
         
-    def forward(self, Vreal, Vpreds, Areal, Apreds):
-        lossV = (-self.cos(Vreal, Vpreds)).mean()
-        lossA = (-self.cos(Areal, Apreds)).mean()
-        return (lossV + lossA) / 2
+    def forward(self, freal, fpreds):
+        lossV = (-self.cos(freal, fpreds)).mean()
+        return lossV
 
 class CLIP_loss(torch.nn.Module):
     def __init__(self):

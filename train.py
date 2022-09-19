@@ -102,7 +102,7 @@ def trainSS(dataloader,
             # compute output
             classV, classA, Vreal, Vpreds, Areal, Apreds, outputs = model(featsV, featsA)
             
-            loss = criterionVA(classV, classA) + criterionMask(Vreal, Vpreds, Areal, Apreds)
+            loss = criterionVA(classV, classA) + criterionMask(Vreal, Vpreds) + criterionMask(Areal, Apreds)
         
             # measure accuracy and record loss
             losses.update(loss.item(), featsV.size(0) + featsA.size(0))
@@ -315,7 +315,7 @@ def test(dataloader, model, model_name):
             # print(feats.shape)
     
             # compute output
-            classV, classA, outputs = model(featsV, featsA)
+            classV, classA, Vreal, Vpreds, Areal, Apreds, outputs = model(featsV, featsA)
     
             all_labels.append(labels.detach().numpy())
             all_outputs.append(outputs.cpu().detach().numpy())
