@@ -28,6 +28,28 @@ def mask_tokens(features, mask_token, p_mask = 0.20):
                 features[b, id_mask, :] = features[b, change_token, :]
     return features, id_masks
 
+#Positional Encoding class
+class PositionalEncoding(nn.Module):
+
+    def __init__(self, d_model: int, dropout: float = 0.1, max_len: int = 6000):
+        super().__init__()
+        self.dropout = nn.Dropout(p=dropout)
+
+        position = torch.arange(max_len).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2) * (-math.log(10000.0) / d_model))
+        pe = torch.zeros(max_len, 1, d_model)
+        pe[:, 0, 0::2] = torch.sin(position * div_term)
+        pe[:, 0, 1::2] = torch.cos(position * div_term)
+        self.register_buffer('pe', pe)
+
+    def forward(self, x: torch.Tensor, add: float = 0.) -> torch.Tensor:
+        """
+        Args:
+            x: Tensor, shape [seq_len, batch_size, embedding_dim]
+        """
+        x = x + self.pe[:x.size(0)] + add
+        return self.dropout(x)
+
 #Model class
 class Model(nn.Module):
     def __init__(self, weights=None, num_classes = 17, d=512, chunk_size=10, framerate=2, p_mask = 0.15, model="SSModel"):
@@ -44,6 +66,9 @@ class Model(nn.Module):
         self.framerate = framerate
         self.p_mask = p_mask
         self.model = model
+        
+        #Positional encodding layer
+        self.positional = PositionalEncoding(d)
         
         #Self-supervised layers / parameters
         self.conv1V = nn.Conv1d(8576, d, 1, stride=1, bias=False)
@@ -148,6 +173,22 @@ class Model(nn.Module):
         inputsAmask = torch.cat((clasAmask, inputsAmask), dim=1)
         
         #Transformer encoders
+        inputsV = inputsV.permute((1, 0, 2))
+        inputsA = inputsA.permute((1, 0, 2))
+        inputsVmask = inputsVmask.permute((1, 0, 2))
+        inputsAmask = inputsAmask.permute((1, 0, 2))
+        
+        #Positional encoding
+        inputsV = self.positional(inputsV)
+        inputsA = self.positional(inputsA)
+        inputsVmask = self.positional(inputsVmask)
+        inputsAmask = self.positional(inputsAmask)
+        
+        inputsV = inputsV.permute((1, 0, 2))
+        inputsA = inputsA.permute((1, 0, 2))
+        inputsVmask = inputsVmask.permute((1, 0, 2))
+        inputsAmask = inputsAmask.permute((1, 0, 2))
+        
         inputsV = self.encoderV(inputsV) #(B x (chunk_size * framerate) + 1 x d)
         inputsA = self.encoderA(inputsA) #(B x (chunk_size * framerate) + 1 x d)
         inputsVmask = self.encoderVmask(inputsVmask)
