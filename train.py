@@ -21,9 +21,11 @@ def trainerSS(train_loader,
             model,
             optimizer,
             #scheduler,
-            criterion,
+            criterionVA,
+            criterionMask,
             model_name,
-            max_epochs=1000):
+            max_epochs=1000,
+            momentum=0.99):
 
     logging.info("start training")
     training_stage = 0
@@ -36,8 +38,8 @@ def trainerSS(train_loader,
         best_model_path = os.path.join("SSmodels", model_name, "model.pth.tar")
 
         # train for one epoch
-        loss_training = trainSS(train_loader, model, criterion, 
-                              optimizer, epoch + 1,
+        loss_training = trainSS(train_loader, model, criterionVA, criterionMask, 
+                              optimizer, epoch + 1, momentum = momentum,
                               train=True)
 
         state = {
@@ -70,6 +72,7 @@ def trainSS(dataloader,
           criterionMask,
           optimizer,
           epoch,
+          momentum = 0.99,
           train=False):
 
     batch_time = AverageMeter()
@@ -107,8 +110,17 @@ def trainSS(dataloader,
                 # compute gradient and do SGD step
                 optimizer.zero_grad()
                 loss.backward()
+                
                 #torch.nn.utils.clip_grad_norm(model.parameters(), max_norm=5)
                 optimizer.step()
+                
+                #Momentum step
+                for MaskVencoder, Vencoder in zip(model.encoderVmask.parameters(), model.encoderV.parameters()):
+                    MaskVencoder.data.copy_(momentum * Vencoder.data + (1-momentum) * MaskVencoder.data)
+                for MaskAencoder, Aencoder in zip(model.encoderAmask.parameters(), model.encoderA.parameters()):
+                    MaskAencoder.data.copy_(momentum * Aencoder.data + (1-momentum) * MaskAencoder.data)
+                model.clasVmask.data.copy_(momentum * model.clasV.data + (1-momentum) * model.clasVmask.data)
+                model.clasAmask.data.copy_(momentum * model.clasA.data + (1-momentum) * model.clasAmask.data)
         
             # measure elapsed time
             batch_time.update(time.time() - end)
