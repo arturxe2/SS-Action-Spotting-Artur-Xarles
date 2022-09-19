@@ -101,12 +101,12 @@ class Model(nn.Module):
 
         
         #Not gradient in these layers
-        self.conv1Vmask.requires_grad_(False)
-        self.conv1Amask.requires_grad_(False)
-        self.encoderVmask.requires_grad_(False)
-        self.encoderAmask.requires_grad_(False)
-        self.clasVmask.requires_grad_(False)
-        self.clasAmask.requires_grad_(False)
+        self.conv1V.requires_grad_(False)
+        self.conv1A.requires_grad_(False)
+        self.encoderV.requires_grad_(False)
+        self.encoderA.requires_grad_(False)
+        self.clasV.requires_grad_(False)
+        self.clasA.requires_grad_(False)
         
         #Spotting layers
         self.fc = nn.Linear(d, self.num_classes+1)
