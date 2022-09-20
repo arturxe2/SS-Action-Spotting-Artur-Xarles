@@ -264,6 +264,7 @@ class Model2(nn.Module):
         self.encoderM = nn.TransformerEncoder(encoder_layerM, 2)
         
         self.clasM = nn.Parameter(torch.randn(d))
+        self.pool_layer = nn.MaxPool1d(chunk_size * framerate * 2, stride = 1)
         
         #General functions
         self.relu = nn.ReLU()
@@ -300,16 +301,19 @@ class Model2(nn.Module):
         
         embeddings = torch.cat((inputsV, inputsA), dim=1) #(B x 2*(chunk_size * framerate) x d)
         
+        embeddings = embeddings.permute((0, 2, 1))
+        embeddings = self.pool_layer(embeddings).squeeze(-1) #(B x d)
+        
         #Class token to size [B x 1 x d]
-        clasM = torch.unsqueeze(self.clasM.repeat(embeddings.shape[0], 1), dim=1) 
+        #clasM = torch.unsqueeze(self.clasM.repeat(embeddings.shape[0], 1), dim=1) 
         
-        embeddings = torch.cat((clasM, embeddings), dim=1) #(B x 1 + 2*(chunk_size * framerate) x d)
+        #embeddings = torch.cat((clasM, embeddings), dim=1) #(B x 1 + 2*(chunk_size * framerate) x d)
         
-        embeddings = self.encoderM(embeddings) #(B x 1 + 2*(chunk_size * framerate) x d)
+        #embeddings = self.encoderM(embeddings) #(B x 1 + 2*(chunk_size * framerate) x d)
         
-        classM = torch.squeeze(embeddings[:, 0, :]) #(B x d)
+        #classM = torch.squeeze(embeddings[:, 0, :]) #(B x d)
         
-        outputs = self.sigm(self.fc(classM))
+        outputs = self.sigm(self.fc(embeddings))
         #logits = torch.mm(classV, torch.transpose(classA, 0, 1)) * torch.exp(self.temperature)
             
         return inputsV, inputsV, inputsV, inputsV, inputsV, inputsV, outputs
