@@ -140,9 +140,11 @@ class SoccerNetClips(Dataset):
                 minutes = int(time[-5:-3])
                 seconds = int(time[-2::])
                 frame = framerate * ( seconds + 60 * minutes ) 
+                print('New action')
                 print(minutes)
                 print(seconds)
                 print(frame)
+                print(event)
 
                 if event not in self.dict_event:
                     continue
