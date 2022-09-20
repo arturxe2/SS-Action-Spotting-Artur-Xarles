@@ -102,7 +102,9 @@ def trainSS(dataloader,
             # compute output
             classV, classA, Vreal, Vpreds, Areal, Apreds, outputs = model(featsV, featsA)
             
-            loss = criterionVA(classV, classA) + criterionMask(Vreal, Vpreds) + criterionMask(Areal, Apreds)# + criterionVA(classV, classA)
+            loss1 = criterionVA(classV, classA)
+            loss2 = criterionMask(Vreal, Vpreds) + criterionMask(Areal, Apreds)
+            loss = loss1 + loss2# + criterionVA(classV, classA)
             #loss.requires_grad = True
             # measure accuracy and record loss
             losses.update(loss.item(), featsV.size(0) + featsA.size(0))
@@ -157,7 +159,7 @@ def trainerAS(train_loader,
             model_name,
             max_epochs=1000,
             evaluation_frequency=3,
-            freeze = False):
+            freeze = True):
 
     logging.info("start training action spotting")
 
