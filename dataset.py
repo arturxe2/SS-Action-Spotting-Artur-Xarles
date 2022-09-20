@@ -37,7 +37,7 @@ def feats2clip(feats, stride, clip_length, padding = "replicate_last", off=0):
         idx = idx.clamp(0, feats.shape[0]-1)
         # Not replicate last, but take the clip closest to the end of the video
         # idx[-1] = torch.arange(clip_length)+feats.shape[0]-clip_length
-    # print(idx)
+    print(idx)
 
     return feats[idx,...]
 
@@ -124,8 +124,10 @@ class SoccerNetClips(Dataset):
             label_half1[:,0]=1 # those are BG classes
             label_half2 = np.zeros((feat_half2V.shape[0], self.num_classes+1))
             label_half2[:,0]=1 # those are BG classes
-
+            
+            z = 0
             for annotation in labels["annotations"]:
+                z += 1
 
                 time = annotation["gameTime"]
                 event = annotation["label"]
@@ -136,6 +138,9 @@ class SoccerNetClips(Dataset):
                 minutes = int(time[-5:-3])
                 seconds = int(time[-2::])
                 frame = framerate * ( seconds + 60 * minutes ) 
+                print(minutes)
+                print(seconds)
+                print(frame)
 
                 if event not in self.dict_event:
                     continue
@@ -147,6 +152,7 @@ class SoccerNetClips(Dataset):
                 if half == 2 and frame//stride>=label_half2.shape[0]:
                     continue
                 a = frame // stride
+                print(a)
                 
                 if half == 1:
                     if self.chunk_size >= stride:
@@ -287,6 +293,8 @@ class SoccerNetClipsTesting(Dataset):
                 if event not in self.dict_event:
                     continue
                 label = self.dict_event[event]
+                
+
 
                 value = 1
                 if "visibility" in annotation.keys():
@@ -356,3 +364,4 @@ class SoccerNetClipsTesting(Dataset):
     def __len__(self):
         return len(self.listGames)
     
+s = SoccerNetClips()
