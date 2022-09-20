@@ -244,7 +244,7 @@ class Model2(nn.Module):
         OUTPUTS: two Tensors of shape (batch_size,d)
         """
 
-        super(Model, self).__init__()
+        super(Model2, self).__init__()
         
         self.num_classes = num_classes
         self.d = d
