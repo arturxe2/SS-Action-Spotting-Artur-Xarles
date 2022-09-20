@@ -288,6 +288,7 @@ class Model2(nn.Module):
         self.conv1V.requires_grad_(False)
         self.conv1A.requires_grad_(False)
         self.encoderV.requires_grad_(False)
+        self.encoderV2.requires_grad_(False)
         self.encoderA.requires_grad_(False)
         
         #Pooling layer
