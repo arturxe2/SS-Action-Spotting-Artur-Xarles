@@ -268,7 +268,7 @@ class Model2(nn.Module):
         self.mask_tokenA = nn.Parameter(torch.randn(128))
         
         encoder_layerV = nn.TransformerEncoderLayer(d_model = d, nhead = 8)
-        self.encoderV = nn.TransformerEncoder(encoder_layerV, 2)
+        self.encoderV = nn.TransformerEncoder(encoder_layerV, 1)
         self.encoderVmask = copy.deepcopy(self.encoderV)
         encoder_layerA = nn.TransformerEncoderLayer(d_model = d, nhead = 8)
         self.encoderA = nn.TransformerEncoder(encoder_layerA, 1)
