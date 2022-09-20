@@ -303,6 +303,9 @@ class Model2(nn.Module):
         
         clasM = torch.unsqueeze(self.clasM.repeat(embeddings.shape[0], 1), dim=1) 
         
+        print(clasM)
+        print(asdf)
+        
         embeddings = torch.cat((clasM, embeddings), dim=1) #(B x 1 + 2*(chunk_size * framerate) x d)
         
         embeddings = self.encoderM(embeddings)
