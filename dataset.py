@@ -360,5 +360,3 @@ class SoccerNetClipsTesting(Dataset):
 
     def __len__(self):
         return len(self.listGames)
-    
-s = SoccerNetClips()
