@@ -257,10 +257,10 @@ class Model2(nn.Module):
         self.positional = PositionalEncoding(d)
         
         #Self-supervised layers / parameters
-        self.conv1V = nn.Conv1d(8576, d, 1, stride=1, bias=False)
-        self.conv1A = nn.Conv1d(128, d, 1, stride=1, bias=False)
-        self.conv1Vmask = copy.deepcopy(self.conv1V)
-        self.conv1Amask = copy.deepcopy(self.conv1A)
+        self.conv1Vmask = nn.Conv1d(8576, d, 1, stride=1, bias=False)
+        self.conv1Amask = nn.Conv1d(128, d, 1, stride=1, bias=False)
+        self.conv1V = copy.deepcopy(self.conv1Vmask)
+        self.conv1A = copy.deepcopy(self.conv1Amask)
         
         
         #Masked tokens
@@ -268,18 +268,12 @@ class Model2(nn.Module):
         self.mask_tokenA = nn.Parameter(torch.randn(128))
         
         encoder_layerV = nn.TransformerEncoderLayer(d_model = d, nhead = 8)
-        self.encoderV = nn.TransformerEncoder(encoder_layerV, 1)
-        self.encoderVmask = copy.deepcopy(self.encoderV)
+        self.encoderVmask = nn.TransformerEncoder(encoder_layerV, 1)
+        self.encoderV = copy.deepcopy(self.encoderVmask)
         encoder_layerA = nn.TransformerEncoderLayer(d_model = d, nhead = 8)
-        self.encoderA = nn.TransformerEncoder(encoder_layerA, 1)
-        self.encoderAmask = copy.deepcopy(self.encoderA)
+        self.encoderAmask = nn.TransformerEncoder(encoder_layerA, 1)
+        self.encoderA = copy.deepcopy(self.encoderAmask)
         
-        
-        
-        self.clasV = nn.Parameter(torch.randn(d))
-        self.clasA = nn.Parameter(torch.randn(d))
-        self.clasVmask = copy.deepcopy(self.clasV)
-        self.clasAmask = copy.deepcopy(self.clasA)
         
         #Mask predictors
         self.convMV = nn.Conv1d(d, d, 1, stride=1, bias=False)
@@ -287,12 +281,11 @@ class Model2(nn.Module):
 
         
         #Not gradient in these layers
-        #self.conv1V.requires_grad_(False)
-        #self.conv1A.requires_grad_(False)
-        #self.encoderV.requires_grad_(False)
-        #self.encoderA.requires_grad_(False)
-        #self.clasV.requires_grad_(False)
-        #self.clasA.requires_grad_(False)
+        self.conv1V.requires_grad_(False)
+        self.conv1A.requires_grad_(False)
+        self.encoderV.requires_grad_(False)
+        self.encoderA.requires_grad_(False)
+
         
         #Spotting layers
         self.fc = nn.Linear(d, self.num_classes+1)
@@ -323,30 +316,56 @@ class Model2(nn.Module):
         inputsV = inputsV.float() #(B x chunk_size*framerate x n_features)
         inputsA = inputsA.float()
         
+        #Masked features
+        inputsVmask = torch.clone(inputsV) 
+        inputsAmask = torch.clone(inputsA)
+        
+        inputsVmask, ids_maskV = mask_tokens(inputsVmask, self.mask_tokenV, 0.2)
+        inputsAmask, ids_maskA = mask_tokens(inputsAmask, self.mask_tokenA, 0.2)
+        
         
         #Permutation
         inputsV = inputsV.permute((0, 2, 1)) #(B x n_features x chunk_size * framerate)
         inputsA = inputsA.permute((0, 2, 1)) #(B x n_features x chunk_size * framerate)
+        inputsVmask = inputsVmask.permute((0, 2, 1))
+        inputsAmask = inputsAmask.permute((0, 2, 1))
         
         #Reduce dimensionality
         inputsV = self.relu(self.conv1V(inputsV)) #(B x d x chunk_size * framerate)
         inputsA = self.relu(self.conv1A(inputsA)) #(B x d x chunk_size * framerate)
+        inputsVmask = self.relu(self.conv1Vmask(inputsVmask))
+        inputsAmask = self.relu(self.conv1Amask(inputsAmask))
         
         #Permutation
         inputsV = inputsV.permute((0, 2, 1)) #(B x chunk_size * framerate x d)
         inputsA = inputsA.permute((0, 2, 1)) #(B x chunk_size * framerate x d)
+        inputsVmask = inputsVmask.permute((0, 2, 1))
+        inputsAmask = inputsAmask.permute((0, 2, 1))
         
         inputsV = self.encoderV(inputsV) #(B x chunk_size * framerate x d)
         inputsA = self.encoderA(inputsA) #(B x chunk_size * framerate x d)
+        inputsVmask = self.encoderVmask(inputsVmask)
+        inputsAmask = self.encoderAmask(inputsAmask)
         
         
         aux_inputsV = inputsV.permute((0, 2, 1)) #(B x d x chunk_size*framerate)
         aux_inputsA = inputsA.permute((0, 2, 1)) #(B x d x chunk_size*framerate)
-        embeddingV = self.pool_layer2(aux_inputsV).squeeze(-1) #(B x d)
-        embeddingA = self.pool_layer2(aux_inputsA).squeeze(-1) #(B x d)
+        aux_inputsVmask = inputsVmask.permute((0, 2, 1))
+        aux_inputsAmask = inputsAmask.permute((0, 2, 1))
+        
+        embeddingV = self.pool_layer2(aux_inputsVmask).squeeze(-1) #(B x d)
+        embeddingA = self.pool_layer2(aux_inputsAmask).squeeze(-1) #(B x d)
+        
+        #Mask predictions
+        Vpreds = (self.convMV(aux_inputsVmask)) #(B x d x (chunk_size * framerate))
+        Apreds = (self.convMA(aux_inputsAmask)) #(B x d x (chunk_size * framerate))
+        realV = aux_inputsV[:, :, ids_maskV]
+        realA = aux_inputsA[:, :, ids_maskA]
+        predsV = Vpreds[:, :, ids_maskV]
+        predsA = Apreds[:, :, ids_maskA]
         
         
-        embeddings = torch.cat((inputsV, inputsA), dim=1) #(B x 2*(chunk_size * framerate) x d)
+        embeddings = torch.cat((inputsVmask, inputsAmask), dim=1) #(B x 2*(chunk_size * framerate) x d)
         
         embeddings = self.encoderM(embeddings)
         embeddings = embeddings.permute((0, 2, 1))
@@ -365,4 +384,4 @@ class Model2(nn.Module):
         outputs = self.sigm(self.fc(embeddings))
         #logits = torch.mm(classV, torch.transpose(classA, 0, 1)) * torch.exp(self.temperature)
             
-        return embeddingV, embeddingA, inputsV, inputsV, inputsV, inputsV, outputs
+        return embeddingV, embeddingA, realV, predsV, realA, predsA, outputs

@@ -102,7 +102,7 @@ def trainSS(dataloader,
             # compute output
             classV, classA, Vreal, Vpreds, Areal, Apreds, outputs = model(featsV, featsA)
             
-            loss = criterionVA(classV, classA) #criterionMask(Vreal, Vpreds) + criterionMask(Areal, Apreds)# + criterionVA(classV, classA)
+            loss = criterionVA(classV, classA) + criterionMask(Vreal, Vpreds) + criterionMask(Areal, Apreds)# + criterionVA(classV, classA)
             #loss.requires_grad = True
             # measure accuracy and record loss
             losses.update(loss.item(), featsV.size(0) + featsA.size(0))
@@ -116,16 +116,16 @@ def trainSS(dataloader,
                 optimizer.step()
                 
                 #Momentum step
-                #for MaskVConv, VConv in zip(model.conv1V.parameters(), model.conv1Vmask.parameters()):
-                #    MaskVConv.data.copy_(momentum * VConv.data + (1-momentum) * MaskVConv.data)
-                #for MaskAConv, AConv in zip(model.conv1A.parameters(), model.conv1Amask.parameters()):
-                #    MaskAConv.data.copy_(momentum * AConv.data + (1-momentum) * MaskAConv.data)
-                #for MaskVencoder, Vencoder in zip(model.encoderV.parameters(), model.encoderVmask.parameters()):
-                #    MaskVencoder.data.copy_(momentum * Vencoder.data + (1-momentum) * MaskVencoder.data)
-                #for MaskAencoder, Aencoder in zip(model.encoderA.parameters(), model.encoderAmask.parameters()):
-                #    MaskAencoder.data.copy_(momentum * Aencoder.data + (1-momentum) * MaskAencoder.data)
-                #model.clasV.data.copy_(momentum * model.clasVmask.data + (1-momentum) * model.clasV.data)
-                #model.clasA.data.copy_(momentum * model.clasAmask.data + (1-momentum) * model.clasA.data)
+                for VConv, VConvMask in zip(model.conv1V.parameters(), model.conv1Vmask.parameters()):
+                    VConv.data.copy_(momentum * VConvMask.data + (1-momentum) * VConv.data)
+                for AConv, AConvMask in zip(model.conv1A.parameters(), model.conv1Amask.parameters()):
+                    AConv.data.copy_(momentum * AConvMask.data + (1-momentum) * AConv.data)
+                
+                for Vencoder, VencoderMask in zip(model.encoderV.parameters(), model.encoderVmask.parameters()):
+                    Vencoder.data.copy_(momentum * VencoderMask.data + (1-momentum) * Vencoder.data)
+                for Aencoder, AencoderMask in zip(model.encoderA.parameters(), model.encoderAmask.parameters()):
+                    Aencoder.data.copy_(momentum * AencoderMask.data + (1-momentum) * Aencoder.data)
+
         
             # measure elapsed time
             batch_time.update(time.time() - end)
