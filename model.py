@@ -337,7 +337,7 @@ class Model2(nn.Module):
         inputsA = inputsA.permute((0, 2, 1)) #(B x chunk_size * framerate x d)
         
         inputsV = self.encoderV(inputsV) #(B x chunk_size * framerate x d)
-        inputsA = self.encoder(inputsA) #(B x chunk_size * framerate x d)
+        inputsA = self.encoderA(inputsA) #(B x chunk_size * framerate x d)
         
         
         aux_inputsV = inputsV.permute((0, 2, 1)) #(B x d x chunk_size*framerate)
