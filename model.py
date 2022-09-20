@@ -272,6 +272,10 @@ class Model2(nn.Module):
         encoder_layerV = nn.TransformerEncoderLayer(d_model = d, nhead = 8)
         self.encoderVmask = nn.TransformerEncoder(encoder_layerV, 1)
         self.encoderV = copy.deepcopy(self.encoderVmask)
+        encoder_layerV2 = nn.TransformerEncoderLayer(d_model = d, nhead = 8)
+        self.encoderVmask2 = nn.TransformerEncoder(encoder_layerV2, 1)
+        self.encoderV2 = copy.deepcopy(self.encoderVmask2)
+        
         encoder_layerA = nn.TransformerEncoderLayer(d_model = d, nhead = 8)
         self.encoderAmask = nn.TransformerEncoder(encoder_layerA, 1)
         self.encoderA = copy.deepcopy(self.encoderAmask)
@@ -295,6 +299,8 @@ class Model2(nn.Module):
         #Transformer Encoders
         encoder_layerM = nn.TransformerEncoderLayer(d_model = d, nhead = 8)
         self.encoderM = nn.TransformerEncoder(encoder_layerM, 1)
+        encoder_layerM2 = nn.TransformerEncoderLayer(d_modal = d, nhead = 8)
+        self.encoderM2 = nn.TransformerEncoder(encoder_layerM2, 1)
         
         #Pooling layer
         self.pool_layerAS = nn.MaxPool1d(chunk_size * framerate * 2, stride = 1)
@@ -360,8 +366,10 @@ class Model2(nn.Module):
         
         #TRANSFORMER ENCODER
         inputsV = self.encoderV(inputsV) #(B x chunk_size * framerate x d)
+        inputsV = self.encoderV2(inputsV) #(B x chunk_size * framerate x d)
         inputsA = self.encoderA(inputsA) #(B x chunk_size * framerate x d)
         inputsVmask = self.encoderVmask(inputsVmask) #(B x chunk_size * framerate x d)
+        inputsVmask = self.encoderVmask2(inputsVmask) #(B x chunk_size * framerate x d)
         inputsAmask = self.encoderAmask(inputsAmask) #(B x chunk_size * framerate x d)
         
         #PERMUTATION
@@ -389,6 +397,7 @@ class Model2(nn.Module):
         
         #MULTIMODAL TRANSFORMER ENCODER
         embeddings = self.encoderM(embeddings) #(B x 2*(chunk_size * framerate) x d)
+        embeddings = self.encoderM2(embeddings) #(B x 2*(chunk_size * framerate) x d)
         
         #PERMUTATION
         embeddings = embeddings.permute((0, 2, 1)) #(B x d x 2*(chunk_size*framerate))
