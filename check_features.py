@@ -52,3 +52,5 @@ def check_features(path_baidu = '/data-local/data3-ssd/axesparraguera',
         print(feat_half1A[0:10, :])
         print(feat_half1A2[0:10, :])
         print(asdf)
+        
+check_features()
