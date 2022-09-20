@@ -301,7 +301,12 @@ class Model2(nn.Module):
         
         embeddings = torch.cat((inputsV, inputsA), dim=1) #(B x 2*(chunk_size * framerate) x d)
         
+        clasM = torch.unsqueeze(self.clasM.repeat(embeddings.shape[0], 1), dim=1) 
+        
+        embeddings = torch.cat((clasM, embeddings), dim=1) #(B x 1 + 2*(chunk_size * framerate) x d)
+        
         embeddings = self.encoderM(embeddings)
+
         embeddings = embeddings.permute((0, 2, 1))
         
         embeddings = self.pool_layer(embeddings).squeeze(-1) #(B x d)
