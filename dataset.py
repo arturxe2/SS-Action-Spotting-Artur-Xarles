@@ -167,6 +167,7 @@ class SoccerNetClips(Dataset):
                         
                     else:
                         a2 = (frame - self.chunk_size) // stride
+                        print(a2)
                         if a != a2:
                             label_half1[a][0] = 0
                             label_half1[a][label+1] = 1
@@ -179,6 +180,7 @@ class SoccerNetClips(Dataset):
                             
                     else:
                         a2 = (frame - self.chunk_size) // stride
+                        print(a2)
                         if a != a2:
                             label_half2[a][0] = 0
                             label_half2[a][label+1] = 1
