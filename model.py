@@ -306,10 +306,12 @@ class Model2(nn.Module):
         embeddings = torch.cat((clasM, embeddings), dim=1) #(B x 1 + 2*(chunk_size * framerate) x d)
         
         embeddings = self.encoderM(embeddings)
-
-        embeddings = embeddings.permute((0, 2, 1))
         
-        embeddings = self.pool_layer(embeddings).squeeze(-1) #(B x d)
+        output = embeddings[:, 0, :].squeeze(1) #(B x d)
+
+        #embeddings = embeddings.permute((0, 2, 1))
+        
+        #embeddings = self.pool_layer(embeddings).squeeze(-1) #(B x d)
         
         #Class token to size [B x 1 x d]
         #clasM = torch.unsqueeze(self.clasM.repeat(embeddings.shape[0], 1), dim=1) 
@@ -320,7 +322,7 @@ class Model2(nn.Module):
         
         #classM = torch.squeeze(embeddings[:, 0, :]) #(B x d)
         
-        outputs = self.sigm(self.fc(embeddings))
+        outputs = self.sigm(self.fc(output))
         #logits = torch.mm(classV, torch.transpose(classA, 0, 1)) * torch.exp(self.temperature)
             
         return inputsV, inputsV, inputsV, inputsV, inputsV, inputsV, outputs
