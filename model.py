@@ -263,7 +263,7 @@ class Model2(nn.Module):
         encoder_layerM = nn.TransformerEncoderLayer(d_model = d, nhead = 8)
         self.encoderM = nn.TransformerEncoder(encoder_layerM, 1)
         
-        self.clasM = nn.Parameter(torch.Tensor(d))
+        self.clasM = nn.Parameter(torch.randn(d))
         self.pool_layer = nn.MaxPool1d(chunk_size * framerate * 2 + 1, stride = 1)
         
         #General functions
