@@ -8,7 +8,7 @@ import torch
 import numpy as np
 import logging
 from dataset import SoccerNetClips, SoccerNetClipsTesting
-from model import Model
+from model import Model, Model2
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import os
 from datetime import datetime
@@ -61,7 +61,7 @@ def main(args):
         
             
     # create model
-    model = Model(weights=args.load_weights, d=args.hidden_d, 
+    model = Model2(weights=args.load_weights, d=args.hidden_d, 
         chunk_size=args.chunk_size, framerate=args.framerate, model=args.model).cuda()
     logging.info(model)
     total_params = sum(p.numel()
