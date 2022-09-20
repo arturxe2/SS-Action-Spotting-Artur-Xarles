@@ -246,6 +246,8 @@ class Model2(nn.Module):
 
         super(Model2, self).__init__()
         
+        #MODEL PARAMETERS
+        
         self.num_classes = num_classes
         self.d = d
         self.chunk_size = chunk_size
@@ -253,20 +255,20 @@ class Model2(nn.Module):
         self.p_mask = p_mask
         self.model = model
         
-        #Positional encodding layer
-        self.positional = PositionalEncoding(d)
         
-        #Self-supervised layers / parameters
+        #SS MODEL LAYERS
+        
+        #Convolutions (reduce dimensionality)
         self.conv1Vmask = nn.Conv1d(8576, d, 1, stride=1, bias=False)
         self.conv1Amask = nn.Conv1d(128, d, 1, stride=1, bias=False)
         self.conv1V = copy.deepcopy(self.conv1Vmask)
         self.conv1A = copy.deepcopy(self.conv1Amask)
         
-        
         #Masked tokens
         self.mask_tokenV = nn.Parameter(torch.randn(8576))
         self.mask_tokenA = nn.Parameter(torch.randn(128))
         
+        #Transformer Encoders
         encoder_layerV = nn.TransformerEncoderLayer(d_model = d, nhead = 8)
         self.encoderVmask = nn.TransformerEncoder(encoder_layerV, 1)
         self.encoderV = copy.deepcopy(self.encoderVmask)
@@ -274,34 +276,46 @@ class Model2(nn.Module):
         self.encoderAmask = nn.TransformerEncoder(encoder_layerA, 1)
         self.encoderA = copy.deepcopy(self.encoderAmask)
         
-        
         #Mask predictors
         self.convMV = nn.Conv1d(d, d, 1, stride=1, bias=False)
         self.convMA = nn.Conv1d(d, d, 1, stride=1, bias=False)
-
         
-        #Not gradient in these layers
+        #Avoid gradient on momentum layers
         self.conv1V.requires_grad_(False)
         self.conv1A.requires_grad_(False)
         self.encoderV.requires_grad_(False)
         self.encoderA.requires_grad_(False)
-
         
-        #Spotting layers
-        self.fc = nn.Linear(d, self.num_classes+1)
+        #Pooling layer
+        self.pool_layerSS = nn.MaxPool1d(chunk_size * framerate, stride = 1)
+        
+        
+        #AS MODEL LAYERS
+        
+        #Transformer Encoders
         encoder_layerM = nn.TransformerEncoderLayer(d_model = d, nhead = 8)
         self.encoderM = nn.TransformerEncoder(encoder_layerM, 1)
         
-        self.clasM = nn.Parameter(torch.randn(d))
+        #Pooling layer
+        self.pool_layerAS = nn.MaxPool1d(chunk_size * framerate * 2, stride = 1)
+        
+        #Linear layer
+        self.fc = nn.Linear(d, self.num_classes+1)
+        
+        
+        #GENERAL LAYERS
+        
+        #Positional encodding layer (not used for the moment)
+        self.positional = PositionalEncoding(d)
         
         #General functions
         self.relu = nn.ReLU()
         self.sigm = nn.Sigmoid()
-
+        
+        #Load weights parameter
         self.load_weights(weights=weights)
         
-        self.pool_layer = nn.MaxPool1d(chunk_size * framerate * 2, stride = 1)
-        self.pool_layer2 = nn.MaxPool1d(chunk_size * framerate, stride = 1)
+        
         
     def load_weights(self, weights=None):
         if(weights is not None):
@@ -310,7 +324,7 @@ class Model2(nn.Module):
             self.load_state_dict(checkpoint['state_dict'])
             print("=> loaded checkpoint '{}' (epoch {})"
                   .format(weights, checkpoint['epoch']))
-    #def forward(self, inputs):
+
     def forward(self, inputsV, inputsA):
         
         
@@ -357,8 +371,8 @@ class Model2(nn.Module):
         aux_inputsAmask = inputsAmask.permute((0, 2, 1)) #(B x d x chunk_size*framerate)
         
         #POOLING TO GET EMBEDDING FOR VISUAL AND AUDIO REPRESENTATIONS (INSTEAD OF CLASS TOKEN)
-        embeddingV = self.pool_layer2(aux_inputsVmask).squeeze(-1) #(B x d)
-        embeddingA = self.pool_layer2(aux_inputsAmask).squeeze(-1) #(B x d)
+        embeddingV = self.pool_layerSS(aux_inputsVmask).squeeze(-1) #(B x d)
+        embeddingA = self.pool_layerSS(aux_inputsAmask).squeeze(-1) #(B x d)
         
         #PREDICTION OF MASK TOKENS
         Vpreds = (self.convMV(aux_inputsVmask)) #(B x d x (chunk_size * framerate))
@@ -380,7 +394,7 @@ class Model2(nn.Module):
         embeddings = embeddings.permute((0, 2, 1)) #(B x d x 2*(chunk_size*framerate))
         
         #POOLING (INSTEAD OF CLASS TOKEN)
-        embeddings = self.pool_layer(embeddings).squeeze(-1) #(B x d)
+        embeddings = self.pool_layerAS(embeddings).squeeze(-1) #(B x d)
         
         #FC AND SIGMOID TO MAKE PREDICTIONS        
         outputs = self.sigm(self.fc(embeddings))
