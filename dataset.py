@@ -65,7 +65,11 @@ class SoccerNetClips(Dataset):
 
 
         stride = self.chunk_size
+        z = 0
         for game in tqdm(self.listGames):
+            z += 1
+            if z > 150:
+                break
             
             feat_half1V = np.load(os.path.join(path_baidu, game, "1_" + features_baidu))
             feat_half1V = feat_half1V.reshape(-1, feat_half1V.shape[-1])
