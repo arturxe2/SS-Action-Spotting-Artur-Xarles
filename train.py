@@ -157,7 +157,7 @@ def trainerAS(train_loader,
             model_name,
             max_epochs=1000,
             evaluation_frequency=3,
-            freeze = True):
+            freeze = False):
 
     logging.info("start training action spotting")
 
