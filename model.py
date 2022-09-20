@@ -300,7 +300,7 @@ class Model2(nn.Module):
         #Transformer Encoders
         encoder_layerM = nn.TransformerEncoderLayer(d_model = d, nhead = 8)
         self.encoderM = nn.TransformerEncoder(encoder_layerM, 1)
-        encoder_layerM2 = nn.TransformerEncoderLayer(d_modal = d, nhead = 8)
+        encoder_layerM2 = nn.TransformerEncoderLayer(d_model = d, nhead = 8)
         self.encoderM2 = nn.TransformerEncoder(encoder_layerM2, 1)
         
         #Pooling layer
