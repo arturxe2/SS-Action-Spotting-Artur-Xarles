@@ -197,7 +197,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--batch_size', required=False, type=int,   default=64,     help='Batch size' )
     parser.add_argument('--LRSS',       required=False, type=float,   default=1e-03, help='Learning Rate SS' )
-    parser.add_argument('--LRAS',       required=False, type=float,   default=1e-03, help='Learning Rate AS' )
+    parser.add_argument('--LRAS',       required=False, type=float,   default=1e-04, help='Learning Rate AS' )
     parser.add_argument('--LRe',       required=False, type=float,   default=1e-06, help='Learning Rate end' )
     parser.add_argument('--patience', required=False, type=int,   default=4,     help='Patience before reducing LR (ReduceLROnPlateau)' )
 
