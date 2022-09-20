@@ -233,3 +233,83 @@ class Model(nn.Module):
         #logits = torch.mm(classV, torch.transpose(classA, 0, 1)) * torch.exp(self.temperature)
             
         return classVmask, classAmask, Vreal, Vpreds, Areal, Apreds, outputs
+
+
+
+#Model class
+class Model2(nn.Module):
+    def __init__(self, weights=None, num_classes = 17, d=512, chunk_size=10, framerate=2, p_mask = 0.15, model="SSModel"):
+        """
+        INPUT: two Tensors of shape (batch_size,chunk_size*framerate,feature_size)
+        OUTPUTS: two Tensors of shape (batch_size,d)
+        """
+
+        super(Model, self).__init__()
+        
+        self.num_classes = num_classes
+        self.d = d
+        self.chunk_size = chunk_size
+        self.framerate = framerate
+        self.p_mask = p_mask
+        self.model = model
+        
+        
+        #Self-supervised layers / parameters
+        self.conv1V = nn.Conv1d(8576, d, 1, stride=1, bias=False)
+        self.conv1A = nn.Conv1d(128, d, 1, stride=1, bias=False)
+        
+        #Spotting layers
+        self.fc = nn.Linear(d, self.num_classes+1)
+        encoder_layerM = nn.TransformerEncoderLayer(d_model = d, nhead = 8)
+        self.encoderM = nn.TransformerEncoder(encoder_layerM, 2)
+        
+        self.clasM = nn.Parameter(torch.randn(d))
+        
+        #General functions
+        self.relu = nn.ReLU()
+        self.sigm = nn.Sigmoid()
+
+        self.load_weights(weights=weights)
+
+    def load_weights(self, weights=None):
+        if(weights is not None):
+            print("=> loading checkpoint '{}'".format(weights))
+            checkpoint = torch.load(weights)
+            self.load_state_dict(checkpoint['state_dict'])
+            print("=> loaded checkpoint '{}' (epoch {})"
+                  .format(weights, checkpoint['epoch']))
+    #def forward(self, inputs):
+    def forward(self, inputsV, inputsA):
+        
+        inputsV = inputsV.float() #(B x chunk_size*framerate x n_features)
+        inputsA = inputsA.float()
+        
+        
+        #Permutation
+        inputsV = inputsV.permute((0, 2, 1)) #(B x n_features x chunk_size * framerate)
+        inputsA = inputsA.permute((0, 2, 1)) #(B x n_features x chunk_size * framerate)
+        
+        #Reduce dimensionality
+        inputsV = self.relu(self.conv1V(inputsV)) #(B x d x chunk_size * framerate)
+        inputsA = self.relu(self.conv1A(inputsA)) #(B x d x chunk_size * framerate)
+        
+        #Permutation
+        inputsV = inputsV.permute((0, 2, 1)) #(B x chunk_size * framerate x d)
+        inputsA = inputsA.permute((0, 2, 1)) #(B x chunk_size * framerate x d)
+        
+        
+        embeddings = torch.cat((inputsV, inputsA), dim=1) #(B x 2*(chunk_size * framerate) x d)
+        
+        #Class token to size [B x 1 x d]
+        clasM = torch.unsqueeze(self.clasM.repeat(embeddings.shape[0], 1), dim=1) 
+        
+        embeddings = torch.cat((clasM, embeddings), dim=1) #(B x 1 + 2*(chunk_size * framerate) x d)
+        
+        embeddings = self.encoderM(embeddings) #(B x 1 + 2*(chunk_size * framerate) x d)
+        
+        classM = torch.squeeze(embeddings[:, 0, :]) #(B x d)
+        
+        outputs = self.sigm(self.fc(classM))
+        #logits = torch.mm(classV, torch.transpose(classA, 0, 1)) * torch.exp(self.temperature)
+            
+        return inputsV, inputsV, inputsV, inputsV, inputsV, inputsV, outputs
