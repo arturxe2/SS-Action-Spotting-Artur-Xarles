@@ -43,7 +43,7 @@ def check_features(path_baidu = '/data-local/data3-ssd/axesparraguera',
         feat_half1V2 = np.load(os.path.join(path_baidu2, game, "1_" + features_baidu2))
         
         feat_half1A = np.load(os.path.join(path_audio, game, "1_" + features_audio))
-        feat_half1A2 = np.load(os.path.join(path_audio, game, "1_" + features_audio2))
+        feat_half1A2 = np.load(os.path.join(path_audio2, game, "1_" + features_audio2))
         
         print('Baidu features:')
         print(feat_half1V[0:10, :])
