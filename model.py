@@ -160,6 +160,9 @@ class Model(nn.Module):
         inputsVmask = inputsVmask.permute((0, 2, 1)) #(B x chunk_size * framerate x d)
         inputsAmask = inputsAmask.permute((0, 2, 1)) #(B x chunk_size * framerate x d)
         
+        aux_inputsV = torch.clone(inputsV)
+        aux_inputsA = torch.clone(inputsA)
+        
         #Class token to size [B x 1 x d]
         clasV = torch.unsqueeze(self.clasV.repeat(inputsV.shape[0], 1), dim=1)
         clasA = torch.unsqueeze(self.clasA.repeat(inputsA.shape[0], 1), dim=1)
@@ -215,7 +218,7 @@ class Model(nn.Module):
         Apreds = Apreds[:, :, ids_maskA]
         
         
-        embeddings = torch.cat((embeddingsVmask, embeddingsAmask), dim=1) #(B x 2*(chunk_size * framerate) x d)
+        embeddings = torch.cat((aux_inputsV, aux_inputsA), dim=1) #(B x 2*(chunk_size * framerate) x d)
         
         #Class token to size [B x 1 x d]
         clasM = torch.unsqueeze(self.clasM.repeat(embeddings.shape[0], 1), dim=1) 

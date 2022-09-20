@@ -172,6 +172,8 @@ def trainerAS(train_loader,
             param.requires_grad = False
         
         #Unfreeze final layers
+        model.conv1V.requires_grad_(True)
+        model.conv1A.requires_grad_(True)
         model.fc.requires_grad_(True)
         model.encoderM.requires_grad_(True)
         model.clasM.requires_grad_(True)

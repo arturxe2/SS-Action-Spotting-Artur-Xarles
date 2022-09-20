@@ -103,10 +103,10 @@ def main(args):
         #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', verbose=True, patience=args.patience)
         
         # start training
-        trainerSS(train_loader, 
-                model, optimizer, criterionVA, criterionMask,
-                model_name=args.model_name,
-                max_epochs=args.max_epochsSS)
+        #trainerSS(train_loader, 
+        #        model, optimizer, criterionVA, criterionMask,
+        #        model_name=args.model_name,
+        #        max_epochs=args.max_epochsSS)
         
         criterion = NLLLoss_weights()
         optimizer = torch.optim.Adam(model.parameters(), lr=args.LRAS, 
