@@ -302,6 +302,8 @@ class Model2(nn.Module):
         embeddings = torch.cat((inputsV, inputsA), dim=1) #(B x 2*(chunk_size * framerate) x d)
         
         embeddings = embeddings.permute((0, 2, 1))
+        
+        embeddings = self.encoderM(embeddings)
         embeddings = self.pool_layer(embeddings).squeeze(-1) #(B x d)
         
         #Class token to size [B x 1 x d]
