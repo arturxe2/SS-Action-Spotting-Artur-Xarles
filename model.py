@@ -261,7 +261,7 @@ class Model2(nn.Module):
         #Spotting layers
         self.fc = nn.Linear(d, self.num_classes+1)
         encoder_layerM = nn.TransformerEncoderLayer(d_model = d, nhead = 8)
-        self.encoderM = nn.TransformerEncoder(encoder_layerM, 2)
+        self.encoderM = nn.TransformerEncoder(encoder_layerM, 1)
         
         self.clasM = nn.Parameter(torch.randn(d))
         self.pool_layer = nn.MaxPool1d(chunk_size * framerate * 2, stride = 1)
