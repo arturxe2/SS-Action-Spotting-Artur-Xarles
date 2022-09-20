@@ -128,7 +128,7 @@ class SoccerNetClips(Dataset):
             z = 0
             for annotation in labels["annotations"]:
                 z += 1
-                if z > 4:
+                if z > 10:
                     print(asdf)
 
                 time = annotation["gameTime"]
