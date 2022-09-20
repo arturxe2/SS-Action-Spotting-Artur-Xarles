@@ -116,16 +116,16 @@ def trainSS(dataloader,
                 optimizer.step()
                 
                 #Momentum step
-                for MaskVConv, VConv in zip(model.conv1V.parameters(), model.conv1Vmask.parameters()):
-                    MaskVConv.data.copy_(momentum * VConv.data + (1-momentum) * MaskVConv.data)
-                for MaskAConv, AConv in zip(model.conv1A.parameters(), model.conv1Amask.parameters()):
-                    MaskAConv.data.copy_(momentum * AConv.data + (1-momentum) * MaskAConv.data)
-                for MaskVencoder, Vencoder in zip(model.encoderV.parameters(), model.encoderVmask.parameters()):
-                    MaskVencoder.data.copy_(momentum * Vencoder.data + (1-momentum) * MaskVencoder.data)
-                for MaskAencoder, Aencoder in zip(model.encoderA.parameters(), model.encoderAmask.parameters()):
-                    MaskAencoder.data.copy_(momentum * Aencoder.data + (1-momentum) * MaskAencoder.data)
-                model.clasV.data.copy_(momentum * model.clasVmask.data + (1-momentum) * model.clasV.data)
-                model.clasA.data.copy_(momentum * model.clasAmask.data + (1-momentum) * model.clasA.data)
+                #for MaskVConv, VConv in zip(model.conv1V.parameters(), model.conv1Vmask.parameters()):
+                #    MaskVConv.data.copy_(momentum * VConv.data + (1-momentum) * MaskVConv.data)
+                #for MaskAConv, AConv in zip(model.conv1A.parameters(), model.conv1Amask.parameters()):
+                #    MaskAConv.data.copy_(momentum * AConv.data + (1-momentum) * MaskAConv.data)
+                #for MaskVencoder, Vencoder in zip(model.encoderV.parameters(), model.encoderVmask.parameters()):
+                #    MaskVencoder.data.copy_(momentum * Vencoder.data + (1-momentum) * MaskVencoder.data)
+                #for MaskAencoder, Aencoder in zip(model.encoderA.parameters(), model.encoderAmask.parameters()):
+                #    MaskAencoder.data.copy_(momentum * Aencoder.data + (1-momentum) * MaskAencoder.data)
+                #model.clasV.data.copy_(momentum * model.clasVmask.data + (1-momentum) * model.clasV.data)
+                #model.clasA.data.copy_(momentum * model.clasAmask.data + (1-momentum) * model.clasA.data)
         
             # measure elapsed time
             batch_time.update(time.time() - end)
