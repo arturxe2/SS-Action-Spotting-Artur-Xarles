@@ -36,7 +36,7 @@ def main(args):
                              features_baidu = args.features_baidu,
                              features_audio = args.features_audio, 
                              split=["train"], framerate=args.framerate, chunk_size=args.chunk_size*args.framerate,
-                             store=True)
+                             store=False)
                
             dataset_Valid = OnlineSoccerNetClips(path_baidu = args.baidu_path, 
                              path_audio = args.audio_path,  
@@ -44,7 +44,7 @@ def main(args):
                              features_baidu = args.features_baidu,
                              features_audio = args.features_audio, 
                              split=["valid"], framerate=args.framerate, chunk_size=args.chunk_size*args.framerate,
-                             store=True)
+                             store=False)
             
             
             dataset_Valid_metric  = OnlineSoccerNetClips(path_baidu = args.baidu_path, 
