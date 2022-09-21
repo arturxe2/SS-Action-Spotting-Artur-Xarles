@@ -276,9 +276,20 @@ class Model2(nn.Module):
         self.encoderVmask2 = nn.TransformerEncoder(encoder_layerV2, 1)
         self.encoderV2 = copy.deepcopy(self.encoderVmask2)
         
+        #self.encoderVmask = nn.TransformerEncoder(encoder_layerV, 2) -> does not learn?
+        #self.clasV = nn.Parameter(torch.randn(d))
+        #clasV = torch.unsqueeze(self.clasV.repeat(inputsV.shape[0], 1), dim=1) (en el forward)
+        #inputsV = torch.cat((clasV, inputsV), dim=1) #(B x (chunk_size * framerate) + 1 x d)
+        
         encoder_layerA = nn.TransformerEncoderLayer(d_model = d, nhead = 8)
         self.encoderAmask = nn.TransformerEncoder(encoder_layerA, 1)
         self.encoderA = copy.deepcopy(self.encoderAmask)
+        
+        #Positional embeddings
+        self.posVmask = nn.Parameter(torch.randn([self.chunk_size * self.framerate, d]))
+        self.posAmask = nn.Parameter(torch.randn([self.chunk_size * self.framerate, d]))
+        self.posV = copy.deepcopy(self.posVmask)
+        self.posA = copy.deepcopy(self.posAmask)
         
         #Mask predictors
         self.convMV = nn.Conv1d(d, d, 1, stride=1, bias=False)
@@ -290,6 +301,8 @@ class Model2(nn.Module):
         self.encoderV.requires_grad_(False)
         self.encoderV2.requires_grad_(False)
         self.encoderA.requires_grad_(False)
+        self.posV.requires_grad_(False)
+        self.posA.requires_grad_(False)
         
         #Pooling layer
         self.pool_layerSS = nn.MaxPool1d(chunk_size * framerate, stride = 1)
@@ -364,6 +377,12 @@ class Model2(nn.Module):
         inputsA = inputsA.permute((0, 2, 1)) #(B x chunk_size * framerate x d)
         inputsVmask = inputsVmask.permute((0, 2, 1)) #(B x chunk_size * framerate x d)
         inputsAmask = inputsAmask.permute((0, 2, 1)) #(B x chunk_size * framerate x d)
+        
+        #POSITIONAL ENCODING
+        inputsV = inputsV + self.posV
+        inputsA = inputsA + self.posA
+        inputsVmask = inputsVmask + self.posVmask
+        inputsAmask = inputsAmask + self.posAmask
         
         #TRANSFORMER ENCODER
         inputsV = self.encoderV(inputsV) #(B x chunk_size * framerate x d)

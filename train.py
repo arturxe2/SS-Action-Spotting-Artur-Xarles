@@ -129,6 +129,9 @@ def trainSS(dataloader,
                     Vencoder.data.copy_(momentum * VencoderMask.data + (1-momentum) * Vencoder.data)
                 for Aencoder, AencoderMask in zip(model.encoderA.parameters(), model.encoderAmask.parameters()):
                     Aencoder.data.copy_(momentum * AencoderMask.data + (1-momentum) * Aencoder.data)
+                
+                model.posV.data.copy_(momentum * model.posVmask.data + (1-momentum) * model.posV.data)
+                model.posA.data.copy_(momentum * model.posAmask.data + (1-momentum) * model.posA.data)
 
         
             # measure elapsed time
