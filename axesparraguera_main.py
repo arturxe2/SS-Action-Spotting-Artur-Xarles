@@ -32,23 +32,28 @@ def main(args):
         if args.version == 2:
             dataset_Train = OnlineSoccerNetClips(path_baidu = args.baidu_path, 
                              path_audio = args.audio_path,  
+                             path_output = '/data-local/data3-sdd/axesparraguera/online_data',
                              features_baidu = args.features_baidu,
                              features_audio = args.features_audio, 
                              split=["train"], framerate=args.framerate, chunk_size=args.chunk_size*args.framerate,
                              store=True)
                
-            dataset_Valid = SoccerNetClips(path_baidu = args.baidu_path, 
+            dataset_Valid = OnlineSoccerNetClips(path_baidu = args.baidu_path, 
                              path_audio = args.audio_path,  
+                             path_output = '/data-local/data1-hdd/axesparraguera/online_data/valid',
                              features_baidu = args.features_baidu,
                              features_audio = args.features_audio, 
-                             split=["valid"], framerate=args.framerate, chunk_size=args.chunk_size*args.framerate)
+                             split=["valid"], framerate=args.framerate, chunk_size=args.chunk_size*args.framerate,
+                             store=True)
             
             
-            dataset_Valid_metric  = SoccerNetClips(path_baidu = args.baidu_path, 
+            dataset_Valid_metric  = OnlineSoccerNetClips(path_baidu = args.baidu_path, 
                              path_audio = args.audio_path,  
+                             path_output = '/data-local/data1-hdd/axesparraguera/online_data/valid',
                              features_baidu = args.features_baidu,
                              features_audio = args.features_audio, 
-                             split=["valid"], framerate=args.framerate, chunk_size=args.chunk_size*args.framerate)
+                             split=["valid"], framerate=args.framerate, chunk_size=args.chunk_size*args.framerate,
+                             store=False)
             
     '''
     dataset_Test  = SoccerNetClipsTesting(path_baidu = args.baidu_path, 
