@@ -190,7 +190,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--version', required=False, type=int,   default=2,     help='Version of the dataset' )
     parser.add_argument('--framerate', required=False, type=int,   default=2,     help='Framerate of the input features' )
-    parser.add_argument('--chunk_size', required=False, type=int,   default=3,     help='Size of the chunk (in seconds)' )
+    parser.add_argument('--chunk_size', required=False, type=int,   default=5,     help='Size of the chunk (in seconds)' )
     parser.add_argument('--model',       required=False, type=str,   default="SSModel", help='How to pool' )
     parser.add_argument('--hidden_d', required=False, type=int, default=512, help='Size of hidden dimension representation')
     parser.add_argument('--NMS_window',       required=False, type=int,   default=20, help='NMS window in second' )
