@@ -7,7 +7,7 @@ Created on Thu Sep 15 11:57:38 2022
 import torch
 import numpy as np
 import logging
-from dataset import SoccerNetClips, SoccerNetClipsTesting
+from dataset import SoccerNetClips, OnlineSoccerNetClips, SoccerNetClipsTesting
 from model import Model, Model2
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import os
@@ -30,11 +30,12 @@ def main(args):
     # create dataset
     if not args.test_only:    
         if args.version == 2:
-            dataset_Train = SoccerNetClips(path_baidu = args.baidu_path, 
+            dataset_Train = OnlineSoccerNetClips(path_baidu = args.baidu_path, 
                              path_audio = args.audio_path,  
                              features_baidu = args.features_baidu,
                              features_audio = args.features_audio, 
-                             split=["train"], framerate=args.framerate, chunk_size=args.chunk_size*args.framerate)
+                             split=["train"], framerate=args.framerate, chunk_size=args.chunk_size*args.framerate,
+                             store=True)
                
             dataset_Valid = SoccerNetClips(path_baidu = args.baidu_path, 
                              path_audio = args.audio_path,  
