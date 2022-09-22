@@ -33,15 +33,17 @@ def trainerSS(train_loader,
     best_loss = 9e99
 
     n_bad_epochs = 0
+    losses_path = []
     for epoch in range(max_epochs):
                 
         best_model_path = os.path.join("SSmodels", model_name, "model.pth.tar")
 
         # train for one epoch
-        loss_training = trainSS(train_loader, model, criterionVA, criterionMask, 
+        loss_training, losses1, losses2, losses3 = trainSS(train_loader, model, 
+                              criterionVA, criterionMask, 
                               optimizer, epoch + 1, momentum = momentum,
                               train=True)
-
+        losses_path.append(losses1, losses2, losses3)
         state = {
             'epoch': epoch + 1,
             'state_dict': model.state_dict(),
@@ -61,7 +63,9 @@ def trainerSS(train_loader,
         
         else:
             n_bad_epochs += 1
-
+    
+    losses_path = np.array(losses_path)
+    np.save(best_model_path + '/losses.npy', losses_path)
 
     return
 
@@ -78,6 +82,9 @@ def trainSS(dataloader,
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
+    losses1 = AverageMeter()
+    losses2 = AverageMeter()
+    losses3 = AverageMeter()
     
     
     # switch to train mode
@@ -103,11 +110,15 @@ def trainSS(dataloader,
             classV, classA, Vreal, Vpreds, Areal, Apreds, outputs = model(featsV, featsA)
             
             loss1 = criterionVA(classV, classA)
-            loss2 = criterionMask(Vreal, Vpreds) + criterionMask(Areal, Apreds)
-            loss = loss1 + loss2# + criterionVA(classV, classA)
+            loss2 = criterionMask(Vreal, Vpreds)
+            loss3 = criterionMask(Areal, Apreds)
+            loss = loss1 + loss2 + loss3# + criterionVA(classV, classA)
             #loss.requires_grad = True
             # measure accuracy and record loss
             losses.update(loss.item(), featsV.size(0) + featsA.size(0))
+            losses1.update(loss1.item(), featsV.size(0))
+            losses2.update(loss2.item(), featsV.size(0))
+            losses3.update(loss3.item(), featsV.size(0))
         
             if train:
                 # compute gradient and do SGD step
@@ -147,9 +158,12 @@ def trainSS(dataloader,
             desc += f'Data:{data_time.avg:.3f}s '
             desc += f'(it:{data_time.val:.3f}s) '
             desc += f'Loss {losses.avg:.4e} '
+            desc += f'Loss1 {losses1.avg:.4e} '
+            desc += f'Loss2 {losses2.avg:.4e} '
+            desc += f'Loss3 {losses3.avg:.4e} '
             t.set_description(desc)
 
-    return losses.avg
+    return losses.avg, losses1.avg, losses2.avg, losses3.avg
 
 
 #Trainer for AS part of the model
