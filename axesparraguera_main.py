@@ -116,13 +116,15 @@ def main(args):
         
         criterion = NLLLoss_weights()
         optimizer = torch.optim.Adam(model.parameters(), lr=args.LRAS, 
-                                    betas=(0.9, 0.999), eps=1e-08, 
+                                    betas=(0.9, 0.999), eps=args.LRe, 
                                     weight_decay=1e-5, amsgrad=True)
+        
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', verbose=True, patience=args.patience)
         
         trainerAS(train_loader,
                   val_loader,
                   val_metric_loader,
-                  model, optimizer, criterion,
+                  model, optimizer, scheduler, criterion,
                   patience=args.patience,
                   model_name=args.model_name,
                   max_epochs=args.max_epochsAS)
@@ -204,7 +206,7 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', required=False, type=int,   default=64,     help='Batch size' )
     parser.add_argument('--LRSS',       required=False, type=float,   default=1e-04, help='Learning Rate SS' )
     parser.add_argument('--LRAS',       required=False, type=float,   default=1e-05, help='Learning Rate AS' )
-    parser.add_argument('--LRe',       required=False, type=float,   default=1e-06, help='Learning Rate end' )
+    parser.add_argument('--LRe',       required=False, type=float,   default=1e-08, help='Learning Rate end' )
     parser.add_argument('--patience', required=False, type=int,   default=4,     help='Patience before reducing LR (ReduceLROnPlateau)' )
 
     parser.add_argument('--GPU',        required=False, type=int,   default=-1,     help='ID of the GPU to use' )

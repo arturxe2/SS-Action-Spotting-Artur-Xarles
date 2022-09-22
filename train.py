@@ -158,7 +158,7 @@ def trainerAS(train_loader,
             val_metric_loader,
             model,
             optimizer,
-            #scheduler,
+            scheduler,
             criterion,
             patience,
             model_name,
@@ -232,7 +232,18 @@ def trainerAS(train_loader,
 
             logging.info("Validation performance at epoch " +
                          str(epoch+1) + " -> " + str(performance_validation))
+        
+        # Reduce LR on Plateau after patience reached
+        prevLR = optimizer.param_groups[0]['lr']
+        scheduler.step(loss_validation)
+        currLR = optimizer.param_groups[0]['lr']
+        if (currLR is not prevLR and scheduler.num_bad_epochs == 0):
+            logging.info("Plateau Reached!")
 
+        if (prevLR < 2 * scheduler.eps and scheduler.num_bad_epochs >= scheduler.patience):
+            logging.info(
+                "Plateau Reached and no more reduction -> Exiting Loop")
+            break
 
     return
 
