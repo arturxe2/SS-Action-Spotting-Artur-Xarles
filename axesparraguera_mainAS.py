@@ -101,16 +101,18 @@ def main(args):
         
         criterion = NLLLoss_weights()
         optimizer = torch.optim.Adam(model.parameters(), lr=args.LRAS, 
-                                    betas=(0.9, 0.999), eps=1e-08, 
+                                    betas=(0.9, 0.999), eps=args.LRe, 
                                     weight_decay=1e-5, amsgrad=True)
+        
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', verbose=True, patience=args.patience)
         
         trainerAS(train_loader,
                   val_loader,
                   val_metric_loader,
-                  model, optimizer, criterion,
+                  model, optimizer, scheduler, criterion,
                   patience=args.patience,
                   model_name=args.model_name,
-                  max_epochs=args.max_epochsAS,
+                  max_epochs=args.max_epochsAS, 
                   freeze=False)
 
     # For the best model only
