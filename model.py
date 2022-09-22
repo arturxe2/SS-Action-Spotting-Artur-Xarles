@@ -432,6 +432,9 @@ class Model2(nn.Module):
         embeddings = self.encoderM(embeddings) #(B x 2*(chunk_size * framerate) x d)
         embeddings = self.encoderM2(embeddings) #(B x 2*(chunk_size * framerate) x d)
         
+        #LAYER NORMALIZATION
+        embeddings = self.norm1(embeddings)
+        
         #PERMUTATION
         embeddings = embeddings.permute((0, 2, 1)) #(B x d x 2*(chunk_size*framerate))
         
@@ -443,3 +446,119 @@ class Model2(nn.Module):
 
             
         return embeddingV, embeddingA, realV, predsV, realA, predsA, outputs
+
+
+#Model class
+class ModelAS(nn.Module):
+    def __init__(self, weights=None, num_classes = 17, d=512, chunk_size=10, framerate=2, p_mask = 0.15, model="SSModel"):
+        """
+        INPUT: two Tensors of shape (batch_size,chunk_size*framerate,feature_size)
+        OUTPUTS: two Tensors of shape (batch_size,d)
+        """
+
+        super(ModelAS, self).__init__()
+        
+        #MODEL PARAMETERS
+        
+        self.num_classes = num_classes
+        self.d = d
+        self.chunk_size = chunk_size
+        self.framerate = framerate
+        self.p_mask = p_mask
+        self.model = model
+        
+        
+        #SS MODEL LAYERS
+        
+        #Convolutions (reduce dimensionality)
+        self.conv1V = nn.Conv1d(8576, d, 1, stride=1, bias=False)
+        self.conv1A = nn.Conv1d(128, d, 1, stride=1, bias=False)
+        self.norm1 = nn.LayerNorm(d)
+        
+        #Positional embeddings
+        self.pos = nn.Parameter(torch.randn([self.chunk_size * self.framerate, d]))
+        
+        #AS MODEL LAYERS
+        
+        #Transformer Encoders
+        encoder_layerM = nn.TransformerEncoderLayer(d_model = d, nhead = 8)
+        self.encoderM = nn.TransformerEncoder(encoder_layerM, 1)
+        encoder_layerM2 = nn.TransformerEncoderLayer(d_model = d, nhead = 8)
+        self.encoderM2 = nn.TransformerEncoder(encoder_layerM2, 1)
+        
+        #Pooling layer
+        self.pool_layerAS = nn.MaxPool1d(chunk_size * framerate * 2, stride = 1)
+        
+        #Linear layer
+        self.fc = nn.Linear(d, self.num_classes+1)
+        
+        
+        #GENERAL LAYERS
+        
+        #Positional encodding layer (not used for the moment)
+        self.positional = PositionalEncoding(d)
+        
+        #General functions
+        self.relu = nn.ReLU()
+        self.sigm = nn.Sigmoid()
+        
+        #Load weights parameter
+        self.load_weights(weights=weights)
+        
+        
+        
+    def load_weights(self, weights=None):
+        if(weights is not None):
+            print("=> loading checkpoint '{}'".format(weights))
+            checkpoint = torch.load(weights)
+            self.load_state_dict(checkpoint['state_dict'])
+            print("=> loaded checkpoint '{}' (epoch {})"
+                  .format(weights, checkpoint['epoch']))
+
+    def forward(self, inputsV, inputsA):
+        
+        
+        #INPUTS TO FLOAT
+        inputsV = inputsV.float() #(B x chunk_size*framerate x n_features)
+        inputsA = inputsA.float() #(B x chunk_size*framerate x n_features)
+        
+        
+        #PERMUTATION
+        inputsV = inputsV.permute((0, 2, 1)) #(B x n_features x chunk_size * framerate)
+        inputsA = inputsA.permute((0, 2, 1)) #(B x n_features x chunk_size * framerate)
+
+        
+        #REDUCE DIMENSIONALITY
+        inputsV = self.relu(self.conv1V(inputsV)) #(B x d x chunk_size * framerate)
+        inputsA = self.relu(self.conv1A(inputsA)) #(B x d x chunk_size * framerate)
+        
+        #PERMUTATION
+        inputsV = inputsV.permute((0, 2, 1)) #(B x chunk_size * framerate x d)
+        inputsA = inputsA.permute((0, 2, 1)) #(B x chunk_size * framerate x d)
+
+        
+        #LAYER NORMALIZATION
+        inputsV = self.norm1(inputsV)
+        inputsA = self.norm1(inputsA)        
+        
+        #CONCATENATION OF VISUAL AND AUDIO EVOLVED FEATURES (MASK PART)
+        embeddings = torch.cat((inputsV, inputsA), dim=1) #(B x 2*(chunk_size * framerate) x d)
+        
+        #MULTIMODAL TRANSFORMER ENCODER
+        embeddings = self.encoderM(embeddings) #(B x 2*(chunk_size * framerate) x d)
+        embeddings = self.encoderM2(embeddings) #(B x 2*(chunk_size * framerate) x d)
+        
+        #LAYER NORMALIZATION
+        embeddings = self.norm1(embeddings)
+        
+        #PERMUTATION
+        embeddings = embeddings.permute((0, 2, 1)) #(B x d x 2*(chunk_size*framerate))
+        
+        #POOLING (INSTEAD OF CLASS TOKEN)
+        embeddings = self.pool_layerAS(embeddings).squeeze(-1) #(B x d)
+        
+        #FC AND SIGMOID TO MAKE PREDICTIONS        
+        outputs = self.sigm(self.fc(embeddings))
+
+            
+        return outputs, outputs, outputs, outputs, outputs, outputs, outputs
