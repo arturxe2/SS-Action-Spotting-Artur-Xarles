@@ -65,7 +65,7 @@ def trainerSS(train_loader,
             n_bad_epochs += 1
     
     losses_path = np.array(losses_path)
-    np.save(best_model_path + '/losses.npy', losses_path)
+    np.save(os.path.join('SSmodels', model_name) + '/losses.npy', losses_path)
 
     return
 
