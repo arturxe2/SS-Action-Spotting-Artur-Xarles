@@ -202,8 +202,6 @@ def trainerAS(train_loader,
     
     
     for epoch in range(max_epochs):
-        if n_bad_epochs >= patience:
-            break
 
         
         best_model_path = os.path.join("ASmodels", model_name, "model.pth.tar")
@@ -385,7 +383,7 @@ def testSpotting(dataloader, model, model_name, overwrite=True, NMS_window=30, N
 
     split = dataloader.dataset.split
     # print(split)
-    output_results = os.path.join("models", model_name, f"results_spotting_{split}.zip")
+    output_results = os.path.join("ASmodels", model_name, f"results_spotting_{split}.zip")
     output_folder = f"outputs_{split}"
 
     if not os.path.exists(output_results) or overwrite:
