@@ -263,6 +263,7 @@ class Model2(nn.Module):
         self.conv1Amask = nn.Conv1d(128, d, 1, stride=1, bias=False)
         self.conv1V = copy.deepcopy(self.conv1Vmask)
         self.conv1A = copy.deepcopy(self.conv1Amask)
+        self.norm1 = nn.LayerNorm(d)
         
         #Masked tokens
         self.mask_tokenV = nn.Parameter(torch.randn(8576))
@@ -357,8 +358,8 @@ class Model2(nn.Module):
         inputsAmask = torch.clone(inputsA) #(B x chunk_size*framerate x n_features)
         
         #GET MASKING OF FEATURES
-        inputsVmask, ids_maskV = mask_tokens(inputsVmask, self.mask_tokenV, 0.5) #(B x chunk_size*framerate x n_features)
-        inputsAmask, ids_maskA = mask_tokens(inputsAmask, self.mask_tokenA, 0.5) #(B x chunk_size*framerate x n_features)
+        inputsVmask, ids_maskV = mask_tokens(inputsVmask, self.mask_tokenV, 0.2) #(B x chunk_size*framerate x n_features)
+        inputsAmask, ids_maskA = mask_tokens(inputsAmask, self.mask_tokenA, 0.2) #(B x chunk_size*framerate x n_features)
         
         #PERMUTATION
         inputsV = inputsV.permute((0, 2, 1)) #(B x n_features x chunk_size * framerate)
@@ -378,6 +379,12 @@ class Model2(nn.Module):
         inputsVmask = inputsVmask.permute((0, 2, 1)) #(B x chunk_size * framerate x d)
         inputsAmask = inputsAmask.permute((0, 2, 1)) #(B x chunk_size * framerate x d)
         
+        #LAYER NORMALIZATION
+        inputsV = self.norm1(inputsV)
+        inputsA = self.norm1(inputsA)
+        inputsVmask = self.norm1(inputsVmask)
+        inputsAmask = self.norm1(inputsAmask)
+        
         #POSITIONAL ENCODING
         inputsV = inputsV + self.posV
         inputsA = inputsA + self.posA
@@ -391,6 +398,12 @@ class Model2(nn.Module):
         inputsVmask = self.encoderVmask(inputsVmask) #(B x chunk_size * framerate x d)
         inputsVmask = self.encoderVmask2(inputsVmask) #(B x chunk_size * framerate x d)
         inputsAmask = self.encoderAmask(inputsAmask) #(B x chunk_size * framerate x d)
+        
+        #LAYER NORMALIZATION
+        inputsV = self.norm1(inputsV)
+        inputsA = self.norm1(inputsA)
+        inputsVmask = self.norm1(inputsVmask)
+        inputsAmask = self.norm1(inputsAmask)
         
         #PERMUTATION
         aux_inputsV = inputsV.permute((0, 2, 1)) #(B x d x chunk_size*framerate)
