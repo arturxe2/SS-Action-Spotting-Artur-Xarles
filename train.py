@@ -43,7 +43,7 @@ def trainerSS(train_loader,
                               criterionVA, criterionMask, 
                               optimizer, epoch + 1, momentum = momentum,
                               train=True)
-        losses_path.append(losses1, losses2, losses3)
+        losses_path.append([losses1, losses2, losses3])
         state = {
             'epoch': epoch + 1,
             'state_dict': model.state_dict(),
