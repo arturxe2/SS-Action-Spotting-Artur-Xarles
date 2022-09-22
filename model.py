@@ -306,8 +306,8 @@ class Model2(nn.Module):
         self.posA.requires_grad_(False)
         
         #Pooling layer
-        #self.pool_layerSS = nn.MaxPool1d(chunk_size * framerate, stride = 1)
-        self.pool_layerSS = nn.AvgPool1d(chunk_size * framerate, stride = 1)
+        self.pool_layerSS = nn.MaxPool1d(chunk_size * framerate, stride = 1)
+        #self.pool_layerSS = nn.AvgPool1d(chunk_size * framerate, stride = 1)
         
         
         #AS MODEL LAYERS
