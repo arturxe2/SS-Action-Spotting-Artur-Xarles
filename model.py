@@ -482,7 +482,7 @@ class ModelAS(nn.Module):
         
         #Transformer Encoders
         encoder_layerM = nn.TransformerEncoderLayer(d_model = d, nhead = 8)
-        self.encoderM = nn.TransformerEncoder(encoder_layerM, 1)
+        self.encoderM = nn.TransformerEncoder(encoder_layerM, 2)
         encoder_layerM2 = nn.TransformerEncoderLayer(d_model = d, nhead = 8)
         self.encoderM2 = nn.TransformerEncoder(encoder_layerM2, 1)
         
@@ -546,7 +546,7 @@ class ModelAS(nn.Module):
         
         #MULTIMODAL TRANSFORMER ENCODER
         embeddings = self.encoderM(embeddings) #(B x 2*(chunk_size * framerate) x d)
-        embeddings = self.encoderM2(embeddings) #(B x 2*(chunk_size * framerate) x d)
+        #embeddings = self.encoderM2(embeddings) #(B x 2*(chunk_size * framerate) x d)
         
         #LAYER NORMALIZATION
         embeddings = self.norm1(embeddings)
