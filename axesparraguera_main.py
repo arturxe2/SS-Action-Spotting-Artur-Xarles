@@ -68,7 +68,8 @@ def main(args):
             
     # create model
     model = Model2(weights=args.load_weights, d=args.hidden_d, 
-        chunk_size=args.chunk_size, framerate=args.framerate, model=args.model).cuda()
+        chunk_size=args.chunk_size, framerate=args.framerate, p_mask=args.p_mask, 
+        model=args.model).cuda()
     logging.info(model)
     total_params = sum(p.numel()
                        for p in model.parameters() if p.requires_grad)
@@ -187,6 +188,7 @@ if __name__ == '__main__':
     parser.add_argument('--max_epochsSS',   required=False, type=int,   default=20,     help='Maximum number of epochs for SS' )
     parser.add_argument('--max_epochsAS',   required=False, type=int,   default=10,     help='Maximum number of epochs for AS' )
     parser.add_argument('--load_weights',   required=False, type=str,   default=None,     help='weights to load' )
+    parser.add_argument('--p_mask', required=False, type=float, default=0.2, help='Probability of masking tokens')
     parser.add_argument('--model_name',   required=False, type=str,   default="Pooling",     help='name of the model to save' )
     parser.add_argument('--test_only',   required=False, action='store_true',  help='Perform testing only' )
 
