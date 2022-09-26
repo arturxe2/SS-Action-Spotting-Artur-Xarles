@@ -347,7 +347,7 @@ class Model2(nn.Module):
             print("=> loaded checkpoint '{}' (epoch {})"
                   .format(weights, checkpoint['epoch']))
 
-    def forward(self, inputsV, inputsA):
+    def forward(self, inputsV, inputsA, inference = False):
         
         
         #INPUTS TO FLOAT
@@ -359,8 +359,14 @@ class Model2(nn.Module):
         inputsAmask = torch.clone(inputsA) #(B x chunk_size*framerate x n_features)
         
         #GET MASKING OF FEATURES
-        inputsVmask, ids_maskV = mask_tokens(inputsVmask, self.mask_tokenV, self.p_mask) #(B x chunk_size*framerate x n_features)
-        inputsAmask, ids_maskA = mask_tokens(inputsAmask, self.mask_tokenA, self.p_mask) #(B x chunk_size*framerate x n_features)
+        if not inference:
+            inputsVmask, ids_maskV = mask_tokens(inputsVmask, self.mask_tokenV, self.p_mask) #(B x chunk_size*framerate x n_features)
+            inputsAmask, ids_maskA = mask_tokens(inputsAmask, self.mask_tokenA, self.p_mask) #(B x chunk_size*framerate x n_features)
+        
+        #NOT MASKED TOKENS IF INFERENCE TRUE
+        if inference:
+            ids_maskV = [0, 1]
+            ids_maskA = [0, 1]
         
         #PERMUTATION
         inputsV = inputsV.permute((0, 2, 1)) #(B x n_features x chunk_size * framerate)

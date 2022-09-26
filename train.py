@@ -427,7 +427,7 @@ def testSpotting(dataloader, model, model_name, overwrite=True, NMS_window=30, N
                         (b+1) < len(featV_half1) else len(featV_half1)-1
                     featV = featV_half1[start_frame:end_frame].cuda()
                     featA = featA_half1[start_frame:end_frame].cuda()
-                    classV, classA, Vreal, Vpreds, Areal, Apreds, outputs = model(featV, featA)
+                    classV, classA, Vreal, Vpreds, Areal, Apreds, outputs = model(featV, featA, inference = True)
                     outputs = outputs.cpu().detach().numpy()
                     timestamp_long_half_1.append(outputs)
                 timestamp_long_half_1 = np.concatenate(timestamp_long_half_1)
@@ -439,7 +439,7 @@ def testSpotting(dataloader, model, model_name, overwrite=True, NMS_window=30, N
                         (b+1) < len(featV_half2) else len(featV_half2)-1
                     featV = featV_half2[start_frame:end_frame].cuda()
                     featA = featA_half2[start_frame:end_frame].cuda()
-                    classV, classA, Vreal, Vpreds, Areal, Apreds, outputs = model(featV, featA)
+                    classV, classA, Vreal, Vpreds, Areal, Apreds, outputs = model(featV, featA, inference = True)
                     outputs = outputs.cpu().detach().numpy()
                     timestamp_long_half_2.append(outputs)
                 timestamp_long_half_2 = np.concatenate(timestamp_long_half_2)
