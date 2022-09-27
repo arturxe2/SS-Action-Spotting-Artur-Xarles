@@ -32,7 +32,7 @@ class MaskLoss(torch.nn.Module):
         self.cos = nn.CosineSimilarity(dim=1, eps=1e-6)
         
     def forward(self, freal, fpreds):
-        lossV = 2 - 2 * (self.cos(freal, fpreds)).mean()
+        lossV = 2 - 2 * (self.cos(freal, fpreds).mean())
         return lossV
 
 class CLIP_loss(torch.nn.Module):
