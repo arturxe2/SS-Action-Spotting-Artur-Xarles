@@ -292,7 +292,7 @@ def trainAS(dataloader,
             featsA = featsA.cuda()
             labels = labels.cuda()
             # compute output
-            classV, classA, Vreal, Vpreds, Areal, Apreds, outputs = model(featsV, featsA)
+            classV, classA, Vreal, Vpreds, Areal, Apreds, outputs = model(featsV, featsA, inference=True)
             
             loss = criterion(labels, outputs)
         
