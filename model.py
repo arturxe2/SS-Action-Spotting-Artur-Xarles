@@ -527,7 +527,7 @@ class ModelAS(nn.Module):
             print("=> loaded checkpoint '{}' (epoch {})"
                   .format(weights, checkpoint['epoch']))
 
-    def forward(self, inputsV, inputsA):
+    def forward(self, inputsV, inputsA, inference = False):
         
         
         #INPUTS TO FLOAT
