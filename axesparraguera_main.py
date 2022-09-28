@@ -124,6 +124,8 @@ def main(args):
                       model_name=args.model_name,
                       max_epochs=2,
                       momentum=.99)
+            
+            done_epochs += 10
         
             criterion = NLLLoss_weights()
             optimizer = torch.optim.Adam(model.parameters(), lr=args.LRAS, 
