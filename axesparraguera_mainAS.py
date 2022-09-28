@@ -173,6 +173,7 @@ if __name__ == '__main__':
     parser.add_argument('--max_epochsSS',   required=False, type=int,   default=20,     help='Maximum number of epochs for SS' )
     parser.add_argument('--max_epochsAS',   required=False, type=int,   default=10,     help='Maximum number of epochs for AS' )
     parser.add_argument('--load_weights',   required=False, type=str,   default=None,     help='weights to load' )
+    parser.add_argument('--p_mask', required=False, type=float, default=0.2, help='Probability of masking tokens')
     parser.add_argument('--model_name',   required=False, type=str,   default="Pooling",     help='name of the model to save' )
     parser.add_argument('--test_only',   required=False, action='store_true',  help='Perform testing only' )
 
