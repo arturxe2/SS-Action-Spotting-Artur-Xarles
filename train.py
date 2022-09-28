@@ -193,7 +193,8 @@ def trainerAS(train_loader,
         #Unfreeze final layers
         #model.conv1V.requires_grad_(True)
         #model.conv1A.requires_grad_(True)
-        model.fc.requires_grad_(True)
+        model.fc1.requires_grad_(True)
+        model.fc2.requires_grad_(True)
         model.encoderM.requires_grad_(True)
         
     
