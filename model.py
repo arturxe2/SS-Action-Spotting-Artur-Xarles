@@ -14,7 +14,6 @@ import copy
 
 def mask_tokens(features, mask_token, p_mask = 0.20):
     n_B, n_T, d = features.shape
-    ids = []
     
     n_masks = max(1, (np.random.uniform(size = n_T) < p_mask).sum())
     id_masks = np.random.choice(np.arange(n_T), n_masks)
@@ -293,8 +292,8 @@ class Model2(nn.Module):
         self.posA = copy.deepcopy(self.posAmask)
         
         #Mask predictors
-        self.convMV = nn.Conv1d(d, d, 1, stride=1, bias=False)
-        self.convMA = nn.Conv1d(d, d, 1, stride=1, bias=False)
+        self.convMV = nn.Conv1d(d, d, 1, stride=1, bias=True)
+        self.convMA = nn.Conv1d(d, d, 1, stride=1, bias=True)
         
         #Avoid gradient on momentum layers
         self.conv1V.requires_grad_(False)
