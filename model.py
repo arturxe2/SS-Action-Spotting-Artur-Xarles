@@ -16,7 +16,7 @@ def mask_tokens(features, mask_token, p_mask = 0.20):
     n_B, n_T, d = features.shape
     
     R = torch.rand([n_B, n_T])
-    random_token = features[torch.randint(0, n_B), torch.randint(0, n_T), :]
+    random_token = features[torch.randint(low=0, high=n_B, size=1), torch.randint(low=0, high=n_T, size=1), :]
     M1 = R < (p_mask * 0.8)
     M2 = (R >= (p_mask * 0.8)) & (R < (p_mask * 0.9))
     M3 = (R >= (p_mask * 0.9)) & (R < p_mask)
