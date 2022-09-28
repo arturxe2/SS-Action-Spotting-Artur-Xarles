@@ -486,11 +486,17 @@ class ModelAS(nn.Module):
         
         #AS MODEL LAYERS
         
-        #Transformer Encoders
-        encoder_layerM = nn.TransformerEncoderLayer(d_model = d, nhead = 8)
+        #Unimodal Transformer Encoder
+        encoder_layerV = nn.TransformerEncoderLayer(d_model = d, nhead = 8, dim_feedforward = 2048, batch_first=True)
+        self.encoderV = nn.TransformerEncoder(encoder_layerV, 2)
+        encoder_layerA = nn.TransformerEncoderLayer(d_model = d, nhead = 8, dim_feedforward = 2048, batch_first=True)
+        self.encoderA = nn.TransformerEncoder(encoder_layerA, 1)
+        
+        
+        #Multimodal Transformer Encoders
+        encoder_layerM = nn.TransformerEncoderLayer(d_model = d, nhead = 8, dim_feedforward = 2048, batch_first=True)
         self.encoderM = nn.TransformerEncoder(encoder_layerM, 2)
-        encoder_layerM2 = nn.TransformerEncoderLayer(d_model = d, nhead = 8)
-        self.encoderM2 = nn.TransformerEncoder(encoder_layerM2, 1)
+
         
         #Pooling layer
         self.pool_layerAS = nn.MaxPool1d(chunk_size * framerate * 2, stride = 1)
@@ -544,8 +550,12 @@ class ModelAS(nn.Module):
 
         
         #LAYER NORMALIZATION
-        inputsV = self.norm1(inputsV)
-        inputsA = self.norm1(inputsA)        
+        inputsV = self.norm1(inputsV) #(B x chunk_size * framerate x d)
+        inputsA = self.norm1(inputsA) #(B x chunk_size * framerate x d)
+        
+        #UNIMODAL TRANSFORMER ENCODERS
+        inputsV = self.encoderV(inputsV) #(B x chunk_size * framerate x d)
+        inputsA = self.encoderA(inputsA) #(B x chunk_size * framerate x d)
         
         #CONCATENATION OF VISUAL AND AUDIO EVOLVED FEATURES (MASK PART)
         embeddings = torch.cat((inputsV, inputsA), dim=1) #(B x 2*(chunk_size * framerate) x d)

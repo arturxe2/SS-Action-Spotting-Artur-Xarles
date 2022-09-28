@@ -178,7 +178,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--split_train', nargs='+', default=["train"], help='list of split for training')
     parser.add_argument('--split_valid', nargs='+', default=["valid"], help='list of split for validation')
-    parser.add_argument('--split_test', nargs='+', default=["test", "challenge"], help='list of split for testing')
+    parser.add_argument('--split_test', nargs='+', default=["test"], help='list of split for testing')
 
 
     parser.add_argument('--version', required=False, type=int,   default=2,     help='Version of the dataset' )
