@@ -136,8 +136,6 @@ def trainSS(dataloader,
                 
                 for Vencoder, VencoderMask in zip(model.encoderV.parameters(), model.encoderVmask.parameters()):
                     Vencoder.data.copy_(momentum * VencoderMask.data + (1-momentum) * Vencoder.data)
-                for Vencoder, VencoderMask in zip(model.encoderV2.parameters(), model.encoderVmask2.parameters()):
-                    Vencoder.data.copy_(momentum * VencoderMask.data + (1-momentum) * Vencoder.data)
                 for Aencoder, AencoderMask in zip(model.encoderA.parameters(), model.encoderAmask.parameters()):
                     Aencoder.data.copy_(momentum * AencoderMask.data + (1-momentum) * Aencoder.data)
                 
@@ -197,7 +195,6 @@ def trainerAS(train_loader,
         #model.conv1A.requires_grad_(True)
         model.fc.requires_grad_(True)
         model.encoderM.requires_grad_(True)
-        model.encoderM2.requires_grad_(True)
         
     
     

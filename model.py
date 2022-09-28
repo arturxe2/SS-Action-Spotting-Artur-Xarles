@@ -15,17 +15,18 @@ import copy
 def mask_tokens(features, mask_token, p_mask = 0.20):
     n_B, n_T, d = features.shape
     
-    n_masks = max(1, (np.random.uniform(size = n_T) < p_mask).sum())
-    id_masks = np.random.choice(np.arange(n_T), n_masks)
-    for b in range(n_B):
-        for id_mask in id_masks:
-            option = np.random.uniform()
-            if option < 0.8:
-                features[b, id_mask, :] = mask_token
-            elif option < 0.9:
-                change_token = np.random.choice(np.arange(n_T), 1)
-                features[b, id_mask, :] = features[b, change_token, :]
-    return features, id_masks
+    R = torch.rand([n_B, n_T])
+    random_token = features[torch.randint(0, n_B), torch.randint(0, n_T), :]
+    M1 = R < (p_mask * 0.8)
+    M2 = (R >= (p_mask * 0.8)) & (R < (p_mask * 0.9))
+    M3 = (R >= (p_mask * 0.9)) & (R < p_mask)
+    
+    features[M1] = mask_token
+    features[M2] = random_token
+    
+    M = (M1 | M2) | M3
+    
+    return features, M
 
 #Positional Encoding class
 class PositionalEncoding(nn.Module):
@@ -262,26 +263,20 @@ class Model2(nn.Module):
         self.conv1Amask = nn.Conv1d(128, d, 1, stride=1, bias=False)
         self.conv1V = copy.deepcopy(self.conv1Vmask)
         self.conv1A = copy.deepcopy(self.conv1Amask)
-        self.norm1 = nn.LayerNorm(d)
+        self.norm1 = nn.LayerNorm([self.chunk_size * self.framerate, d])
+        self.norm2 = nn.LayerNorm([2 * self.chunk_size * self.framerate, d])
         
         #Masked tokens
-        self.mask_tokenV = nn.Parameter(torch.randn(8576))
-        self.mask_tokenA = nn.Parameter(torch.randn(128))
+        self.mask_tokenV = nn.Parameter(torch.randn(d))
+        self.mask_tokenA = nn.Parameter(torch.randn(d))
         
         #Transformer Encoders
-        encoder_layerV = nn.TransformerEncoderLayer(d_model = d, nhead = 8)
-        self.encoderVmask = nn.TransformerEncoder(encoder_layerV, 1)
+        encoder_layerV = nn.TransformerEncoderLayer(d_model = d, nhead = 8, batch_first=True)
+        self.encoderVmask = nn.TransformerEncoder(encoder_layerV, 2)
         self.encoderV = copy.deepcopy(self.encoderVmask)
-        encoder_layerV2 = nn.TransformerEncoderLayer(d_model = d, nhead = 8)
-        self.encoderVmask2 = nn.TransformerEncoder(encoder_layerV2, 1)
-        self.encoderV2 = copy.deepcopy(self.encoderVmask2)
         
-        #self.encoderVmask = nn.TransformerEncoder(encoder_layerV, 2) -> does not learn?
-        #self.clasV = nn.Parameter(torch.randn(d))
-        #clasV = torch.unsqueeze(self.clasV.repeat(inputsV.shape[0], 1), dim=1) (en el forward)
-        #inputsV = torch.cat((clasV, inputsV), dim=1) #(B x (chunk_size * framerate) + 1 x d)
         
-        encoder_layerA = nn.TransformerEncoderLayer(d_model = d, nhead = 8)
+        encoder_layerA = nn.TransformerEncoderLayer(d_model = d, nhead = 8, batch_first=True)
         self.encoderAmask = nn.TransformerEncoder(encoder_layerA, 1)
         self.encoderA = copy.deepcopy(self.encoderAmask)
         
@@ -292,14 +287,15 @@ class Model2(nn.Module):
         self.posA = copy.deepcopy(self.posAmask)
         
         #Mask predictors
-        self.convMV = nn.Conv1d(d, d, 1, stride=1, bias=True)
-        self.convMA = nn.Conv1d(d, d, 1, stride=1, bias=True)
+        self.convMV1 = nn.Conv1d(d, 2*d, 1, stride=1, bias=True)
+        self.convMV2 = nn.Conv1d(2*d, d, 1, stride=1, bias=True)
+        self.convMA1 = nn.Conv1d(d, 2*d, 1, stride=1, bias=True)
+        self.convMA2 = nn.Conv1d(2*d, d, 1, stride=1, bias=True)
         
         #Avoid gradient on momentum layers
         self.conv1V.requires_grad_(False)
         self.conv1A.requires_grad_(False)
         self.encoderV.requires_grad_(False)
-        self.encoderV2.requires_grad_(False)
         self.encoderA.requires_grad_(False)
         self.posV.requires_grad_(False)
         self.posA.requires_grad_(False)
@@ -312,16 +308,15 @@ class Model2(nn.Module):
         #AS MODEL LAYERS
         
         #Transformer Encoders
-        encoder_layerM = nn.TransformerEncoderLayer(d_model = d, nhead = 8)
-        self.encoderM = nn.TransformerEncoder(encoder_layerM, 1)
-        encoder_layerM2 = nn.TransformerEncoderLayer(d_model = d, nhead = 8)
-        self.encoderM2 = nn.TransformerEncoder(encoder_layerM2, 1)
+        encoder_layerM = nn.TransformerEncoderLayer(d_model = d, nhead = 8, batch_first=True)
+        self.encoderM = nn.TransformerEncoder(encoder_layerM, 2)
         
         #Pooling layer
         self.pool_layerAS = nn.MaxPool1d(chunk_size * framerate * 2, stride = 1)
         
         #Linear layer
-        self.fc = nn.Linear(d, self.num_classes+1)
+        self.fc1 = nn.Linear(d, 2*d)
+        self.fc2 = nn.Linear(2*d, self.num_classes+1)
         
         
         #GENERAL LAYERS
@@ -353,67 +348,56 @@ class Model2(nn.Module):
         inputsV = inputsV.float() #(B x chunk_size*framerate x n_features)
         inputsA = inputsA.float() #(B x chunk_size*framerate x n_features)
         
+        #PERMUTATION
+        inputsV = inputsV.permute((0, 2, 1)) #(B x n_features x chunk_size*framerate)
+        inputsA = inputsA.permute((0, 2, 1)) #(B x n_features x chunk_size*framerate)
+        
+        #REDUCE DIMENSIONALITY
+        inputsV = self.relu(self.conv1V(inputsV)) #(B x d x chunk_size*framerate)
+        inputsA = self.relu(self.conv1A(inputsA)) #(B x d x chunk_size*framerate)
+        
+        #PERMUTATION
+        inputsV = inputsV.permute((0, 2, 1)) #(B x chunk_size*framerate x d)
+        inputsA = inputsA.permute((0, 2, 1)) #(B x chunk_size*framerate x d)
+        
         #COPY OF FEATURES (FOR MASKED ONES)
-        inputsVmask = torch.clone(inputsV) #(B x chunk_size*framerate x n_features)
-        inputsAmask = torch.clone(inputsA) #(B x chunk_size*framerate x n_features)
+        inputsVmask = torch.clone(inputsV) #(B x chunk_size*framerate x d)
+        inputsAmask = torch.clone(inputsA) #(B x chunk_size*framerate x d)
         
         #GET MASKING OF FEATURES
         if not inference:
-            inputsVmask, ids_maskV = mask_tokens(inputsVmask, self.mask_tokenV, self.p_mask) #(B x chunk_size*framerate x n_features)
-            inputsAmask, ids_maskA = mask_tokens(inputsAmask, self.mask_tokenA, self.p_mask) #(B x chunk_size*framerate x n_features)
-        
-        #NOT MASKED TOKENS IF INFERENCE TRUE
-        if inference:
-            ids_maskV = [0, 1]
-            ids_maskA = [0, 1]
-        
-        #PERMUTATION
-        inputsV = inputsV.permute((0, 2, 1)) #(B x n_features x chunk_size * framerate)
-        inputsA = inputsA.permute((0, 2, 1)) #(B x n_features x chunk_size * framerate)
-        inputsVmask = inputsVmask.permute((0, 2, 1)) #(B x n_features x chunk_size * framerate)
-        inputsAmask = inputsAmask.permute((0, 2, 1)) #(B x n_features x chunk_size * framerate)
-        
-        #REDUCE DIMENSIONALITY
-        inputsV = self.relu(self.conv1V(inputsV)) #(B x d x chunk_size * framerate)
-        inputsA = self.relu(self.conv1A(inputsA)) #(B x d x chunk_size * framerate)
-        inputsVmask = self.relu(self.conv1Vmask(inputsVmask)) #(B x d x chunk_size * framerate)
-        inputsAmask = self.relu(self.conv1Amask(inputsAmask)) #(B x d x chunk_size * framerate)
-        
-        #PERMUTATION
-        inputsV = inputsV.permute((0, 2, 1)) #(B x chunk_size * framerate x d)
-        inputsA = inputsA.permute((0, 2, 1)) #(B x chunk_size * framerate x d)
-        inputsVmask = inputsVmask.permute((0, 2, 1)) #(B x chunk_size * framerate x d)
-        inputsAmask = inputsAmask.permute((0, 2, 1)) #(B x chunk_size * framerate x d)
+            inputsVmask, MV = mask_tokens(inputsVmask, self.mask_tokenV, self.p_mask) #(B x chunk_size*framerate x d)
+            inputsAmask, MA = mask_tokens(inputsAmask, self.mask_tokenA, self.p_mask) #(B x chunk_size*framerate x d)
+            
+        else:
+            MV = torch.rand([inputsVmask.shape[0], inputsVmask.shape[1]]) < 0.05
+            MA = torch.rand([inputsAmask.shape[0], inputsAmask.shape[1]]) < 0.05
         
         #LAYER NORMALIZATION
-        inputsV = self.norm1(inputsV)
-        inputsA = self.norm1(inputsA)
-        inputsVmask = self.norm1(inputsVmask)
-        inputsAmask = self.norm1(inputsAmask)
+        inputsV = self.norm1(inputsV) #(B x chunk_size*framerate x d)
+        inputsA = self.norm1(inputsA) #(B x chunk_size*framerate x d)
+        inputsVmask = self.norm1(inputsVmask) #(B x chunk_size*framerate x d)
+        inputsAmask = self.norm1(inputsAmask) #(B x chunk_size*framerate x d)
         
         #POSITIONAL ENCODING
-        inputsV = inputsV + self.posV
-        inputsA = inputsA + self.posA
-        inputsVmask = inputsVmask + self.posVmask
-        inputsAmask = inputsAmask + self.posAmask
+        inputsV = inputsV + self.posV #(B x chunk_size*framerate x d)
+        inputsA = inputsA + self.posA #(B x chunk_size*framerate x d)
+        inputsVmask = inputsVmask + self.posVmask #(B x chunk_size*framerate x d)
+        inputsAmask = inputsAmask + self.posAmask #(B x chunk_size*framerate x d)
         
         #TRANSFORMER ENCODER
         inputsV = self.encoderV(inputsV) #(B x chunk_size * framerate x d)
-        inputsV = self.encoderV2(inputsV) #(B x chunk_size * framerate x d)
         inputsA = self.encoderA(inputsA) #(B x chunk_size * framerate x d)
         inputsVmask = self.encoderVmask(inputsVmask) #(B x chunk_size * framerate x d)
-        inputsVmask = self.encoderVmask2(inputsVmask) #(B x chunk_size * framerate x d)
         inputsAmask = self.encoderAmask(inputsAmask) #(B x chunk_size * framerate x d)
         
         #LAYER NORMALIZATION
-        inputsV = self.norm1(inputsV)
-        inputsA = self.norm1(inputsA)
-        inputsVmask = self.norm1(inputsVmask)
-        inputsAmask = self.norm1(inputsAmask)
+        inputsV = self.norm1(inputsV) #(B x chunk_size * framerate x d)
+        inputsA = self.norm1(inputsA) #(B x chunk_size * framerate x d)
+        inputsVmask = self.norm1(inputsVmask) #(B x chunk_size * framerate x d)
+        inputsAmask = self.norm1(inputsAmask) #(B x chunk_size * framerate x d)
         
         #PERMUTATION
-        aux_inputsV = inputsV.permute((0, 2, 1)) #(B x d x chunk_size*framerate)
-        aux_inputsA = inputsA.permute((0, 2, 1)) #(B x d x chunk_size*framerate)
         aux_inputsVmask = inputsVmask.permute((0, 2, 1)) #(B x d x chunk_size*framerate)
         aux_inputsAmask = inputsAmask.permute((0, 2, 1)) #(B x d x chunk_size*framerate)
         
@@ -422,24 +406,24 @@ class Model2(nn.Module):
         embeddingA = self.pool_layerSS(aux_inputsAmask).squeeze(-1) #(B x d)
         
         #PREDICTION OF MASK TOKENS
-        Vpreds = (self.convMV(aux_inputsVmask)) #(B x d x (chunk_size * framerate))
-        Apreds = (self.convMA(aux_inputsAmask)) #(B x d x (chunk_size * framerate))
+        Vpreds = self.convMV2(self.relu(self.convMV1(aux_inputsVmask))).permute((0, 2, 1)) #(B x chunk_size * framerate x d)
+        Apreds = self.convMA2(self.relu(self.convMA1(aux_inputsAmask))).permute((0, 2, 1)) #(B x chunk_size * framerate x d)
         
         #GET MASKED IDS
-        realV = aux_inputsV[:, :, ids_maskV] #(B x d x n_mask)
-        realA = aux_inputsA[:, :, ids_maskA] #(B x d x n_mask)
-        predsV = Vpreds[:, :, ids_maskV] #(B x d x n_mask)
-        predsA = Apreds[:, :, ids_maskA] #(B x d x n_mask)
+        realV = inputsV[MV] #(n_maskV x d)
+        realA = inputsA[MA] #(n_maskA x d)
+        predsV = Vpreds[MV] #(n_maskV x d)
+        predsA = Apreds[MA] #(n_maskA x d)
         
         #CONCATENATION OF VISUAL AND AUDIO EVOLVED FEATURES (MASK PART)
         embeddings = torch.cat((inputsVmask, inputsAmask), dim=1) #(B x 2*(chunk_size * framerate) x d)
         
         #MULTIMODAL TRANSFORMER ENCODER
         embeddings = self.encoderM(embeddings) #(B x 2*(chunk_size * framerate) x d)
-        embeddings = self.encoderM2(embeddings) #(B x 2*(chunk_size * framerate) x d)
+
         
         #LAYER NORMALIZATION
-        embeddings = self.norm1(embeddings)
+        embeddings = self.norm2(embeddings) #(B x 2*(chunk_size * framerate) x d)
         
         #PERMUTATION
         embeddings = embeddings.permute((0, 2, 1)) #(B x d x 2*(chunk_size*framerate))
@@ -448,7 +432,7 @@ class Model2(nn.Module):
         embeddings = self.pool_layerAS(embeddings).squeeze(-1) #(B x d)
         
         #FC AND SIGMOID TO MAKE PREDICTIONS        
-        outputs = self.sigm(self.fc(embeddings))
+        outputs = self.sigm(self.fc2(self.relu(self.fc1(embeddings))))
 
             
         return embeddingV, embeddingA, realV, predsV, realA, predsA, outputs
@@ -502,7 +486,8 @@ class ModelAS(nn.Module):
         self.pool_layerAS = nn.MaxPool1d(chunk_size * framerate * 2, stride = 1)
         
         #Linear layer
-        self.fc = nn.Linear(d, self.num_classes+1)
+        self.fc1 = nn.Linear(d, 2*d)
+        self.fc2 = nn.Linear(2*d, self.num_classes+1)
         
         
         #GENERAL LAYERS
@@ -574,7 +559,7 @@ class ModelAS(nn.Module):
         embeddings = self.pool_layerAS(embeddings).squeeze(-1) #(B x d)
         
         #FC AND SIGMOID TO MAKE PREDICTIONS        
-        outputs = self.sigm(self.fc(embeddings))
+        outputs = self.sigm(self.fc2(self.relu(self.fc1(embeddings))))
 
             
         return outputs, outputs, outputs, outputs, outputs, outputs, outputs
