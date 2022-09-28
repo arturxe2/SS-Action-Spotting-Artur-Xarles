@@ -101,7 +101,7 @@ def main(args):
         criterionVA = CLIP_loss()
         criterionMask = MaskLoss()
         optimizer = torch.optim.Adam(model.parameters(), lr=args.LRSS, 
-                                    betas=(0.9, 0.999), eps=1e-08, 
+                                    betas=(0.9, 0.999), eps=1e-07, 
                                     weight_decay=1e-5, amsgrad=True)
         #optimizer = torch.optim.SGD(model.parameters(), lr=args.LR,
         #                            momentum=0.9)
@@ -122,10 +122,10 @@ def main(args):
             trainerSS(train_loader, 
                       model, optimizer, criterionVA, criterionMask,
                       model_name=args.model_name,
-                      max_epochs=2,
+                      max_epochs=5,
                       momentum=.99)
             
-            done_epochs += 10
+            done_epochs += 5
         
             criterion = NLLLoss_weights()
             optimizer = torch.optim.Adam(model.parameters(), lr=args.LRAS, 
