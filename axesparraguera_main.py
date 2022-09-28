@@ -108,28 +108,75 @@ def main(args):
 
 
         #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', verbose=True, patience=args.patience)
+        done_epochs = 0
+        while done_epochs < args.max_epochsSS:
+            
+            if done_epochs != 0:
+                model = Model2(weights=args.load_weights, d=args.hidden_d, 
+                    chunk_size=args.chunk_size, framerate=args.framerate, p_mask=args.p_mask, 
+                    model=args.model).cuda()
+                checkpoint = torch.load(os.path.join("SSmodels", args.model_name, "model.pth.tar"))
+                model.load_state_dict(checkpoint['state_dict'])
+                
+            # start training
+            trainerSS(train_loader, 
+                      model, optimizer, criterionVA, criterionMask,
+                      model_name=args.model_name,
+                      max_epochs=2,
+                      momentum=.99)
         
-        # start training
-        trainerSS(train_loader, 
-                model, optimizer, criterionVA, criterionMask,
-                model_name=args.model_name,
-                max_epochs=args.max_epochsSS,
-                momentum=.99)
-        
-        criterion = NLLLoss_weights()
-        optimizer = torch.optim.Adam(model.parameters(), lr=args.LRAS, 
+            criterion = NLLLoss_weights()
+            optimizer = torch.optim.Adam(model.parameters(), lr=args.LRAS, 
                                     betas=(0.9, 0.999), eps=args.LRe, 
                                     weight_decay=1e-5, amsgrad=True)
         
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', verbose=True, patience=args.patience)
+            scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', verbose=True, patience=args.patience)
         
-        trainerAS(train_loader,
-                  val_loader,
-                  val_metric_loader,
-                  model, optimizer, scheduler, criterion,
-                  patience=args.patience,
-                  model_name=args.model_name,
-                  max_epochs=args.max_epochsAS)
+            trainerAS(train_loader,
+                      val_loader,
+                      val_metric_loader,
+                      model, optimizer, scheduler, criterion,
+                      patience=args.patience,
+                      model_name=args.model_name,
+                      max_epochs=args.max_epochsAS)
+            
+            checkpoint = torch.load(os.path.join("ASmodels", args.model_name, "model.pth.tar"))
+            model.load_state_dict(checkpoint['state_dict'])
+            
+            for split in args.split_test:
+                 
+                if done_epochs == 0:
+                    dataset_Test  = SoccerNetClipsTesting(path_baidu = args.baidu_path, 
+                                                          path_audio = args.audio_path,
+                                                          path_labels = args.labels_path,
+                                                          features_baidu = args.features_baidu,
+                                                          features_audio = args.features_audio, 
+                                                          split=split, 
+                                                          framerate=args.framerate, chunk_size=args.chunk_size*args.framerate)
+                    print('Test loader')
+                    test_loader = torch.utils.data.DataLoader(dataset_Test,
+                                                              batch_size=1, shuffle=False,
+                                                              num_workers=1, pin_memory=True)
+                
+                
+                results = testSpotting(test_loader, model=model, model_name=args.model_name, NMS_window=args.NMS_window, NMS_threshold=args.NMS_threshold)
+                if results is None:
+                    continue
+
+                a_mAP = results["a_mAP"]
+                a_mAP_per_class = results["a_mAP_per_class"]
+                a_mAP_visible = results["a_mAP_visible"]
+                a_mAP_per_class_visible = results["a_mAP_per_class_visible"]
+                a_mAP_unshown = results["a_mAP_unshown"]
+                a_mAP_per_class_unshown = results["a_mAP_per_class_unshown"]
+
+                logging.info("Best Performance at end of training ")
+                logging.info("a_mAP visibility all: " +  str(a_mAP))
+                logging.info("a_mAP visibility all per class: " +  str( a_mAP_per_class))
+                logging.info("a_mAP visibility visible: " +  str( a_mAP_visible))
+                logging.info("a_mAP visibility visible per class: " +  str( a_mAP_per_class_visible))
+                logging.info("a_mAP visibility unshown: " +  str( a_mAP_unshown))
+                logging.info("a_mAP visibility unshown per class: " +  str( a_mAP_per_class_unshown))
 
     # For the best model only
     checkpoint = torch.load(os.path.join("ASmodels", args.model_name, "model.pth.tar"))
@@ -139,6 +186,7 @@ def main(args):
     #print(asdf)
 
     # test on multiple splits [test/challenge]
+    '''
     for split in args.split_test:
          
         dataset_Test  = SoccerNetClipsTesting(path_baidu = args.baidu_path, 
@@ -172,6 +220,7 @@ def main(args):
         logging.info("a_mAP visibility visible per class: " +  str( a_mAP_per_class_visible))
         logging.info("a_mAP visibility unshown: " +  str( a_mAP_unshown))
         logging.info("a_mAP visibility unshown per class: " +  str( a_mAP_per_class_unshown))
+        '''
 
     return
 
