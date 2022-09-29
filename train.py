@@ -124,7 +124,7 @@ def trainSS(dataloader,
             loss1 = criterionVA(classV, classA)
             loss2 = criterionVA(Vreal, Vpreds)
             loss3 = criterionVA(Areal, Apreds)
-            loss = + loss2 + loss3# + criterionVA(classV, classA)
+            loss = loss1 + loss2 + loss3# + criterionVA(classV, classA)
             #loss.requires_grad = True
             # measure accuracy and record loss
             losses.update(loss.item(), featsV.size(0) + featsA.size(0))
@@ -149,7 +149,8 @@ def trainSS(dataloader,
                 
                 model.posV.data.copy_(momentum * model.posVmask.data + (1-momentum) * model.posV.data)
                 model.posA.data.copy_(momentum * model.posAmask.data + (1-momentum) * model.posA.data)
-
+                model.clasV.data.copy_(momentum * model.clasVmask.data + (1-momentum) * model.clasV.data)
+                model.clasA.data.copy_(momentum * model.clasAmask.data + (1-momentum) * model.clasA.data)
         
             # measure elapsed time
             batch_time.update(time.time() - end)

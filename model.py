@@ -272,11 +272,15 @@ class Model2(nn.Module):
         encoder_layerV = nn.TransformerEncoderLayer(d_model = d, nhead = 8, batch_first=True)
         self.encoderVmask = nn.TransformerEncoder(encoder_layerV, 2)
         self.encoderV = copy.deepcopy(self.encoderVmask)
+        self.clasVmask = nn.Parameter(torch.randn(d))
+        self.clasV = copy.deepcopy(self.clasVmask)
         
         
         encoder_layerA = nn.TransformerEncoderLayer(d_model = d, nhead = 8, batch_first=True)
         self.encoderAmask = nn.TransformerEncoder(encoder_layerA, 1)
         self.encoderA = copy.deepcopy(self.encoderAmask)
+        self.clasAmask = nn.Parameter(torch.randn(d))
+        self.clasA = copy.deepcopy(self.clasVmask)
         
         #Positional embeddings
         self.posVmask = nn.Parameter(torch.randn([self.chunk_size * self.framerate, d]))
@@ -295,6 +299,8 @@ class Model2(nn.Module):
         self.encoderA.requires_grad_(False)
         self.posV.requires_grad_(False)
         self.posA.requires_grad_(False)
+        self.clasV.requires_grad_(False)
+        self.clasA.requires_grad_(False)
         
         #Pooling layer
         self.pool_layerSS = nn.MaxPool1d(chunk_size * framerate, stride = 1)
@@ -381,25 +387,44 @@ class Model2(nn.Module):
         inputsVmask = inputsVmask + self.posVmask #(B x chunk_size*framerate x d)
         inputsAmask = inputsAmask + self.posAmask #(B x chunk_size*framerate x d)
         
+        #ADDING CLASS TOKEN
+        clasV = torch.unsqueeze(self.clasV.repeat(inputsV.shape[0], 1), dim=1) #(B x 1 x d)
+        inputsV = torch.cat((clasV, inputsV), dim=1) #(B x chunk_size*framerate + 1 x d)
+        clasVmask = torch.unsqueeze(self.clasVmask.repeat(inputsVmask.shape[0], 1), dim=1) #(B x 1 x d)
+        inputsVmask = torch.cat((clasVmask, inputsVmask), dim=1) #(B x chunk_size*framerate + 1 x d)
+        clasA = torch.unsqueeze(self.clasA.repeat(inputsA.shape[0], 1), dim=1) #(B x 1 x d)
+        inputsA = torch.cat((clasA, inputsA), dim=1) #(B x chunk_size*framerate + 1 x d)
+        clasAmask = torch.unsqueeze(self.clasAmask.repeat(inputsAmask.shape[0], 1), dim=1) #(B x 1 x d)
+        inputsAmask = torch.cat((clasAmask, inputsAmask), dim=1) #(B x chunk_size*framerate + 1 x d)
+        
         #TRANSFORMER ENCODER
-        inputsV = self.encoderV(inputsV) #(B x chunk_size * framerate x d)
-        inputsA = self.encoderA(inputsA) #(B x chunk_size * framerate x d)
-        inputsVmask = self.encoderVmask(inputsVmask) #(B x chunk_size * framerate x d)
-        inputsAmask = self.encoderAmask(inputsAmask) #(B x chunk_size * framerate x d)
+        inputsV = self.encoderV(inputsV) #(B x chunk_size * framerate +1 x d)
+        inputsA = self.encoderA(inputsA) #(B x chunk_size * framerate +1 x d)
+        inputsVmask = self.encoderVmask(inputsVmask) #(B x chunk_size * framerate +1 x d)
+        inputsAmask = self.encoderAmask(inputsAmask) #(B x chunk_size * framerate +1 x d)
         
         #LAYER NORMALIZATION
-        inputsV = self.norm1(inputsV) #(B x chunk_size * framerate x d)
-        inputsA = self.norm1(inputsA) #(B x chunk_size * framerate x d)
-        inputsVmask = self.norm1(inputsVmask) #(B x chunk_size * framerate x d)
-        inputsAmask = self.norm1(inputsAmask) #(B x chunk_size * framerate x d)
-        
-        #PERMUTATION
-        aux_inputsVmask = inputsVmask.permute((0, 2, 1)) #(B x d x chunk_size*framerate)
-        aux_inputsAmask = inputsAmask.permute((0, 2, 1)) #(B x d x chunk_size*framerate)
+        inputsV = self.norm1(inputsV) #(B x chunk_size * framerate +1 x d)
+        inputsA = self.norm1(inputsA) #(B x chunk_size * framerate +1 x d)
+        inputsVmask = self.norm1(inputsVmask) #(B x chunk_size * framerate +1 x d)
+        inputsAmask = self.norm1(inputsAmask) #(B x chunk_size * framerate +1 x d)
         
         #POOLING TO GET EMBEDDING FOR VISUAL AND AUDIO REPRESENTATIONS (INSTEAD OF CLASS TOKEN)
-        embeddingV = self.pool_layerSS(aux_inputsVmask).squeeze(-1) #(B x d)
-        embeddingA = self.pool_layerSS(aux_inputsAmask).squeeze(-1) #(B x d)
+        #embeddingV = self.pool_layerSS(aux_inputsVmask).squeeze(-1) #(B x d)
+        #embeddingA = self.pool_layerSS(aux_inputsAmask).squeeze(-1) #(B x d)
+        embeddingV = inputsVmask[:, 0, :]
+        embeddingA = inputsAmask[:, 0, :]
+        
+        #NOT CLASS TOKENS
+        inputsV = inputsV[:, 1:, :]
+        inputsA = inputsA[:, 1:, :]
+        inputsVmask = inputsVmask[:, 1:, :]
+        inputsAmask = inputsAmask[:, 1:, :]
+        
+        #PERMUTATION
+        aux_inputsVmask = inputsVmask.permute((0, 2, 1)) #(B x d x chunk_size*framerate +1)
+        aux_inputsAmask = inputsAmask.permute((0, 2, 1)) #(B x d x chunk_size*framerate +1)
+        
         
         #PREDICTION OF MASK TOKENS
         Vpreds = self.convMV2(self.relu(self.convMV1(aux_inputsVmask))).permute((0, 2, 1)) #(B x chunk_size * framerate x d)
