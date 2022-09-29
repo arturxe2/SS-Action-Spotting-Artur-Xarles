@@ -26,7 +26,7 @@ def vid2frame(vid_path = '/data-net/datasets/SoccerNetv2/videos_lowres',
         #HALF 1
         cam = cv2.VideoCapture(os.path.join(vid_path, game, "1_224p.mkv"))
         
-        path = os.path.join(store_path, 'half1')
+        path = os.path.join(store_path, game, 'half1')
         
         if not os.path.exists(path):
             os.makedirs(path)
@@ -57,7 +57,7 @@ def vid2frame(vid_path = '/data-net/datasets/SoccerNetv2/videos_lowres',
         #HALF 2
         cam = cv2.VideoCapture(os.path.join(vid_path, game, "2_224p.mkv"))
         
-        path = os.path.join(store_path, 'half2')
+        path = os.path.join(store_path, game, 'half2')
         
         if not os.path.exists(path):
             os.makedirs(path)
