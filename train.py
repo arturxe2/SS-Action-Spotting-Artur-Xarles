@@ -97,7 +97,6 @@ def trainSS(dataloader,
     end = time.time()
     
     #Potser al fer cuda() hi ha el problema
-    s = 0
     with tqdm(enumerate(dataloader), total=len(dataloader), ncols=160) as t:
         
         for i, (featsV, featsA, labels) in t:
@@ -110,16 +109,6 @@ def trainSS(dataloader,
             # compute output
             classV, classA, Vreal, Vpreds, Areal, Apreds, outputs = model(featsV, featsA)
             
-            if s == 0:
-                print('Vreal:')
-                print(Vreal)
-                print('Vpreds:')
-                print(Vpreds)
-                print('Areal:')
-                print(Areal)
-                print('Apreds:')
-                print(Apreds)
-                s += 1
             
             loss1 = criterionVA(classV, classA)
             loss2 = criterionVA(Vreal, Vpreds)
