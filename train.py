@@ -122,8 +122,8 @@ def trainSS(dataloader,
                 s += 1
             
             loss1 = criterionVA(classV, classA)
-            loss2 = criterionMask(Vreal, Vpreds)
-            loss3 = criterionMask(Areal, Apreds)
+            loss2 = criterionVA(Vreal, Vpreds)
+            loss3 = criterionVA(Areal, Apreds)
             loss = + loss2 + loss3# + criterionVA(classV, classA)
             #loss.requires_grad = True
             # measure accuracy and record loss
