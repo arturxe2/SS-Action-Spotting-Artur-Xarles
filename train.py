@@ -119,6 +119,7 @@ def trainSS(dataloader,
                 print(Areal)
                 print('Apreds:')
                 print(Apreds)
+                s += 1
             
             loss1 = criterionVA(classV, classA)
             loss2 = criterionMask(Vreal, Vpreds)
