@@ -259,10 +259,8 @@ class Model2(nn.Module):
         #SS MODEL LAYERS
         
         #Convolutions (reduce dimensionality)
-        self.conv1Vmask = nn.Conv1d(8576, d, 1, stride=1, bias=False)
-        self.conv1Amask = nn.Conv1d(128, d, 1, stride=1, bias=False)
-        self.conv1V = copy.deepcopy(self.conv1Vmask)
-        self.conv1A = copy.deepcopy(self.conv1Amask)
+        self.conv1V = nn.Conv1d(8576, d, 1, stride=1, bias=False)
+        self.conv1A = nn.Conv1d(128, d, 1, stride=1, bias=False)
         self.norm1 = nn.LayerNorm([self.chunk_size * self.framerate, d])
         self.norm2 = nn.LayerNorm([2 * self.chunk_size * self.framerate, d])
         
@@ -293,8 +291,6 @@ class Model2(nn.Module):
         self.convMA2 = nn.Conv1d(2*d, d, 1, stride=1, bias=True)
         
         #Avoid gradient on momentum layers
-        self.conv1V.requires_grad_(False)
-        self.conv1A.requires_grad_(False)
         self.encoderV.requires_grad_(False)
         self.encoderA.requires_grad_(False)
         self.posV.requires_grad_(False)

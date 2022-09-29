@@ -129,10 +129,6 @@ def trainSS(dataloader,
                 optimizer.step()
                 
                 #Momentum step
-                for VConv, VConvMask in zip(model.conv1V.parameters(), model.conv1Vmask.parameters()):
-                    VConv.data.copy_(momentum * VConvMask.data + (1-momentum) * VConv.data)
-                for AConv, AConvMask in zip(model.conv1A.parameters(), model.conv1Amask.parameters()):
-                    AConv.data.copy_(momentum * AConvMask.data + (1-momentum) * AConv.data)
                 
                 for Vencoder, VencoderMask in zip(model.encoderV.parameters(), model.encoderVmask.parameters()):
                     Vencoder.data.copy_(momentum * VencoderMask.data + (1-momentum) * Vencoder.data)
