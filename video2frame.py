@@ -24,6 +24,7 @@ def vid2frame(vid_path = '/data-net/datasets/SoccerNetv2/videos_lowres',
             break
         
         #HALF 1
+        print('Doing half 1...')
         cam = cv2.VideoCapture(os.path.join(vid_path, game, "1_224p.mkv"))
         
         path = os.path.join(store_path, game, 'half1')
@@ -55,6 +56,7 @@ def vid2frame(vid_path = '/data-net/datasets/SoccerNetv2/videos_lowres',
             
         
         #HALF 2
+        print('Doing half 2...')
         cam = cv2.VideoCapture(os.path.join(vid_path, game, "2_224p.mkv"))
         
         path = os.path.join(store_path, game, 'half2')
