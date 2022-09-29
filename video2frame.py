@@ -17,11 +17,7 @@ def vid2frame(vid_path = '/data-net/datasets/SoccerNetv2/videos_lowres',
               split = ['train', 'valid', 'test', 'challenge']):
     
     listGames = getListGames(split)
-    n = 0
     for game in tqdm(listGames):
-        n+=1
-        if n > 3:
-            break
         
         #HALF 1
         print('Doing half 1...')
