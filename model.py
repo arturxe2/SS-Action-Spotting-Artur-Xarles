@@ -262,7 +262,8 @@ class Model2(nn.Module):
         self.conv1V = nn.Conv1d(8576, d, 1, stride=1, bias=False)
         self.conv1A = nn.Conv1d(128, d, 1, stride=1, bias=False)
         self.norm1 = nn.LayerNorm([self.chunk_size * self.framerate, d])
-        self.norm2 = nn.LayerNorm([2 * self.chunk_size * self.framerate, d])
+        self.norm2 = nn.LayerNorm([self.chunk_size * self.framerate + 1, d])
+        self.norm3 = nn.LayerNorm([2 * self.chunk_size * self.framerate, d])
         
         #Masked tokens
         self.mask_tokenV = nn.Parameter(torch.randn(d))
@@ -404,10 +405,10 @@ class Model2(nn.Module):
         inputsAmask = self.encoderAmask(inputsAmask) #(B x chunk_size * framerate +1 x d)
         
         #LAYER NORMALIZATION
-        inputsV = self.norm1(inputsV) #(B x chunk_size * framerate +1 x d)
-        inputsA = self.norm1(inputsA) #(B x chunk_size * framerate +1 x d)
-        inputsVmask = self.norm1(inputsVmask) #(B x chunk_size * framerate +1 x d)
-        inputsAmask = self.norm1(inputsAmask) #(B x chunk_size * framerate +1 x d)
+        inputsV = self.norm2(inputsV) #(B x chunk_size * framerate +1 x d)
+        inputsA = self.norm2(inputsA) #(B x chunk_size * framerate +1 x d)
+        inputsVmask = self.norm2(inputsVmask) #(B x chunk_size * framerate +1 x d)
+        inputsAmask = self.norm2(inputsAmask) #(B x chunk_size * framerate +1 x d)
         
         #POOLING TO GET EMBEDDING FOR VISUAL AND AUDIO REPRESENTATIONS (INSTEAD OF CLASS TOKEN)
         #embeddingV = self.pool_layerSS(aux_inputsVmask).squeeze(-1) #(B x d)
@@ -444,7 +445,7 @@ class Model2(nn.Module):
 
         
         #LAYER NORMALIZATION
-        embeddings = self.norm2(embeddings) #(B x 2*(chunk_size * framerate) x d)
+        embeddings = self.norm3(embeddings) #(B x 2*(chunk_size * framerate) x d)
         
         #PERMUTATION
         embeddings = embeddings.permute((0, 2, 1)) #(B x d x 2*(chunk_size*framerate))
