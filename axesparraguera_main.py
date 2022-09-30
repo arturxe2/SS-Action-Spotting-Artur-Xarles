@@ -112,7 +112,6 @@ def main(args):
         while done_epochs < args.max_epochsSS:
             
             if done_epochs > 0:
-                print('Reading SS model')
                 model = Model2(weights=args.load_weights, d=args.hidden_d, 
                     chunk_size=args.chunk_size, framerate=args.framerate, p_mask=args.p_mask, 
                     model=args.model).cuda()
@@ -127,7 +126,7 @@ def main(args):
             trainerSS(train_loader, 
                       model, optimizer, criterionVA, criterionMask,
                       model_name=args.model_name,
-                      max_epochs=1,
+                      max_epochs=10,
                       momentum=.99)
             
             
@@ -149,7 +148,7 @@ def main(args):
             
             checkpoint = torch.load(os.path.join("ASmodels", args.model_name, "model.pth.tar"))
             model.load_state_dict(checkpoint['state_dict'])
-            '''
+            
             for split in args.split_test:
                  
                 if done_epochs == 0:
@@ -180,11 +179,11 @@ def main(args):
                 logging.info("Best Performance at end of training ")
                 logging.info("a_mAP visibility all: " +  str(a_mAP))
                 logging.info("a_mAP visibility all per class: " +  str( a_mAP_per_class))
-                logging.info("a_mAP visibility visible: " +  str( a_mAP_visible))
-                logging.info("a_mAP visibility visible per class: " +  str( a_mAP_per_class_visible))
-                logging.info("a_mAP visibility unshown: " +  str( a_mAP_unshown))
-                logging.info("a_mAP visibility unshown per class: " +  str( a_mAP_per_class_unshown))
-            '''
+                #logging.info("a_mAP visibility visible: " +  str( a_mAP_visible))
+                #logging.info("a_mAP visibility visible per class: " +  str( a_mAP_per_class_visible))
+                #logging.info("a_mAP visibility unshown: " +  str( a_mAP_unshown))
+                #logging.info("a_mAP visibility unshown per class: " +  str( a_mAP_per_class_unshown))
+            
             done_epochs += 10
     
     # For the best model only
