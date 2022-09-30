@@ -111,7 +111,8 @@ def main(args):
         done_epochs = 0
         while done_epochs < args.max_epochsSS:
             
-            if done_epochs != 0:
+            if done_epochs > 0:
+                print('Reading SS model')
                 model = Model2(weights=args.load_weights, d=args.hidden_d, 
                     chunk_size=args.chunk_size, framerate=args.framerate, p_mask=args.p_mask, 
                     model=args.model).cuda()
@@ -119,10 +120,14 @@ def main(args):
                 model.load_state_dict(checkpoint['state_dict'])
                 
             # start training
+            optimizer = torch.optim.Adam(model.parameters(), lr=args.LRSS, 
+                                        betas=(0.9, 0.999), eps=1e-07, 
+                                        weight_decay=1e-5, amsgrad=True)
+            
             trainerSS(train_loader, 
                       model, optimizer, criterionVA, criterionMask,
                       model_name=args.model_name,
-                      max_epochs=10,
+                      max_epochs=1,
                       momentum=.99)
             
             
