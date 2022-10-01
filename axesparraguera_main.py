@@ -184,7 +184,7 @@ def main(args):
                 #logging.info("a_mAP visibility unshown: " +  str( a_mAP_unshown))
                 #logging.info("a_mAP visibility unshown per class: " +  str( a_mAP_per_class_unshown))
             
-            done_epochs += 10
+            done_epochs += 20
     
     # For the best model only
     checkpoint = torch.load(os.path.join("ASmodels", args.model_name, "model.pth.tar"))
