@@ -126,7 +126,7 @@ def main(args):
             trainerSS(train_loader, 
                       model, optimizer, criterionVA, criterionMask,
                       model_name=args.model_name,
-                      max_epochs=10,
+                      max_epochs=20,
                       momentum=.99)
             
             
