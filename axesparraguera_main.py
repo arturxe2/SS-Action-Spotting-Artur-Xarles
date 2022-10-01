@@ -126,7 +126,7 @@ def main(args):
             trainerSS(train_loader, 
                       model, optimizer, criterionVA, criterionMask,
                       model_name=args.model_name,
-                      max_epochs=20,
+                      max_epochs=30,
                       momentum=.99)
             
             
@@ -184,7 +184,7 @@ def main(args):
                 #logging.info("a_mAP visibility unshown: " +  str( a_mAP_unshown))
                 #logging.info("a_mAP visibility unshown per class: " +  str( a_mAP_per_class_unshown))
             
-            done_epochs += 20
+            done_epochs += 30
     
     # For the best model only
     checkpoint = torch.load(os.path.join("ASmodels", args.model_name, "model.pth.tar"))
