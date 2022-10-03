@@ -618,7 +618,7 @@ class ModelFrames(nn.Module):
         #SS MODEL LAYERS
         
         #Convolutions (reduce dimensionality)
-        self.conv1V = nn.Conv1d(8576, d, 1, stride=1, bias=False)
+        self.conv1V = nn.Conv1d(576, d, 1, stride=1, bias=False)
         self.conv1A = nn.Conv1d(128, d, 1, stride=1, bias=False)
         self.norm1 = nn.LayerNorm([self.chunk_size * self.framerate, d])
         self.norm2 = nn.LayerNorm([self.chunk_size * self.framerate + 1, d])
@@ -707,8 +707,16 @@ class ModelFrames(nn.Module):
         
         
         #INPUTS TO FLOAT
-        inputsV = inputsV.float() #(B x chunk_size*framerate x n_features)
+        inputsV = inputsV.float() #(B x n_frames x H x W x C)
         inputsA = inputsA.float() #(B x chunk_size*framerate x n_features)
+        inputsV = inputsV.permute((0, 1, 4, 2, 3)) #(B x n_frames x C x H x W)
+        images_shape = inputsV.shape
+        
+        inputsV = inputsV.view(-1, images_shape[2:]) #(n x H x W x C)
+        
+        #BACKBONE
+        inputsV = self.mobilenet(inputsV) #(n x 576)
+        inputsV = inputsV.view(images_shape[:2], -1) #(B x n_frames x n_features(576))
         
         #PERMUTATION
         inputsV = inputsV.permute((0, 2, 1)) #(B x n_features x chunk_size*framerate)
