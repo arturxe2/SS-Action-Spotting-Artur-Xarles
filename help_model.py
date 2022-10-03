@@ -6,10 +6,11 @@ Created on Mon Oct  3 13:16:20 2022
 """
 
 import torch
+import torchvision
 
-from torchvision.models.video import mvit_v2_s, MViT_V2_S_Weights
+#from torchvision.models.video import mvit_v2_s, MViT_V2_S_Weights
 
-model = mvit_v2_s(MViT_V2_S_Weights)
+model = torchvision.models.video.mvit_v2_s()
 
 #model.classifier = torch.nn.Identity()
 print(model)
