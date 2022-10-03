@@ -634,10 +634,11 @@ class OnlineSoccerNetFrames(Dataset):
                 
                 #More audio than frames
                 if math.ceil(frames1 % 25) * 2 < feat_half1A.shape[0]:
-                    feat_half1A = feat_half1A[math.ceil(frames1 % 25) * 2, :]
+                    feat_half1A = feat_half1A[0:math.ceil(frames1 % 25) * 2, :]
+                
                 
                 if math.ceil(frames2 % 25) * 2 < feat_half2A.shape[0]:
-                    feat_half2A = feat_half2A[math.ceil(frames2 % 25) * 2, :]
+                    feat_half2A = feat_half2A[0:math.ceil(frames2 % 25) * 2, :]
     
                     
                 #Generate clips from features
