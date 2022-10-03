@@ -729,13 +729,19 @@ class OnlineSoccerNetFrames(Dataset):
                     np.save(path + '/half2_chunk' + str(i) + '_labels.npy', label_half2[i, :])
                     self.path_list.append(path + '/half2_chunk' + str(i) + '_')
                     self.halfs.append(2)
-                    self.initial_frames.append(i * 25 * stride)
+                    self.initial_frames.append(i * 25 * stride // 4 * 4)
                     self.clip_game.append(game)
     
                         
             #Concatenate features
             with open(self.path_store + '/chunk_list.pkl', 'wb') as f:
                 pickle.dump(self.path_list, f)
+            with open(self.path_store + '/halfs.pkl', 'wb') as f:
+                pickle.dump(self.halfs, f)
+            with open(self.path_store + '/initial_frames.pkl', 'wb') as f:
+                pickle.dump(self.initial_frames, f)
+            with open(self.path_store + '/clip_game.pkl', 'wb') as f:
+                pickle.dump(self.clip_game, f)
                 
         else:
             with open(self.path_store + '/chunk_list.pkl', 'rb') as f:
