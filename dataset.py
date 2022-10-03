@@ -593,10 +593,6 @@ class SoccerNetFrames(Dataset):
                     frames_chunk = list()
                     if i != 0:
                         self.frames.append(frames_chunk)
-                a = io.imread(os.path.join(path_frames, game, 'half1', 'frame ' + str(i) + '.jpg'))
-                print(a)
-                print(a.shape)
-                print(asdf)
                 
                 try:
                     frames_chunk.append(io.imread(os.path.join(path_frames, game, 'half1', 'frame ' + str(i) + '.jpg')))
