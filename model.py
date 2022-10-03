@@ -778,10 +778,10 @@ class ModelFrames(nn.Module):
         inputsAmask = self.encoderAmask(inputsAmask) #(B x chunk_size * framerate +1 x d)
         
         #LAYER NORMALIZATION
-        inputsV = self.norm2(inputsV) #(B x chunk_size * framerate +1 x d)
-        inputsA = self.norm2(inputsA) #(B x chunk_size * framerate +1 x d)
-        inputsVmask = self.norm2(inputsVmask) #(B x chunk_size * framerate +1 x d)
-        inputsAmask = self.norm2(inputsAmask) #(B x chunk_size * framerate +1 x d)
+        inputsV = self.norm2V(inputsV) #(B x chunk_size * framerate +1 x d)
+        inputsA = self.norm2A(inputsA) #(B x chunk_size * framerate +1 x d)
+        inputsVmask = self.norm2V(inputsVmask) #(B x chunk_size * framerate +1 x d)
+        inputsAmask = self.norm2A(inputsAmask) #(B x chunk_size * framerate +1 x d)
         
         #POOLING TO GET EMBEDDING FOR VISUAL AND AUDIO REPRESENTATIONS (INSTEAD OF CLASS TOKEN)
         #embeddingV = self.pool_layerSS(aux_inputsVmask).squeeze(-1) #(B x d)
