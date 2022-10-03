@@ -602,6 +602,7 @@ class OnlineSoccerNetFrames(Dataset):
                         frames2 = i
                     if found1 & found2:
                         break
+                    i += self.framestride
                 
                 print(frames1)
                 print(frames2)
