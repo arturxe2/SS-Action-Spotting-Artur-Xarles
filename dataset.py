@@ -588,8 +588,11 @@ class OnlineSoccerNetFrames(Dataset):
             self.initial_frames = []
             self.n_samples = []
             self.clip_game = []
-            
+            z = 0
             for game in tqdm(self.listGames):
+                z += 1
+                if z == 130:
+                    break
                 
                 feat_half1A = np.load(os.path.join(path_audio, game, "1_" + features_audio))
                 feat_half1A = feat_half1A.reshape(-1, feat_half1A.shape[-1])
@@ -743,6 +746,12 @@ class OnlineSoccerNetFrames(Dataset):
         else:
             with open(self.path_store + '/chunk_list.pkl', 'rb') as f:
                 self.path_list = pickle.load(f)
+            with open(self.path_store + '/halfs.pkl', 'rb') as f:
+                self.halfs = pickle.load(f)
+            with open(self.path_store + '/initial_frames.pkl', 'rb') as f:
+                self.initial_frames = pickle.load(f)
+            with open(self.path_store + '/clip_game.pkl', 'rb') as f:
+                self.clip_game = pickle.load(f)
 
 
 
