@@ -642,8 +642,8 @@ class OnlineSoccerNetFrames(Dataset):
     
                     
                 #Generate clips from features
-                feat_half1A = feats2clip(torch.from_numpy(feat_half1A), stride=stride, clip_length=self.chunk_size)  
-                feat_half2A = feats2clip(torch.from_numpy(feat_half2A), stride=stride, clip_length=self.chunk_size) 
+                feat_half1A = feats2clip(torch.from_numpy(feat_half1A), stride=stride, clip_length=self.chunk_size*self.framerate)  
+                feat_half2A = feats2clip(torch.from_numpy(feat_half2A), stride=stride, clip_length=self.chunk_size*self.framerate) 
     
                 
                 
