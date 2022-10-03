@@ -601,8 +601,8 @@ class SoccerNetFrames(Dataset):
                 
                 i += frame_stride
             
-            print(self.frames.shape)
-            print(frames_chunk.shape)
+            print(np.array(self.frames).shape)
+            print(np.array(frames_chunk).shape)
             print(asdf)
             
 
