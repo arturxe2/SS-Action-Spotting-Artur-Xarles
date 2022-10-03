@@ -712,11 +712,11 @@ class ModelFrames(nn.Module):
         inputsV = inputsV.permute((0, 1, 4, 2, 3)) #(B x n_frames x C x H x W)
         images_shape = inputsV.shape
         
-        inputsV = inputsV.view(-1, images_shape[2:]) #(n x H x W x C)
+        inputsV = inputsV.view(-1, images_shape[2], images_shape[3], images_shape[4]) #(n x H x W x C)
         
         #BACKBONE
         inputsV = self.mobilenet(inputsV) #(n x 576)
-        inputsV = inputsV.view(images_shape[:2], -1) #(B x n_frames x n_features(576))
+        inputsV = inputsV.view(images_shape[0], images_shape[1], -1) #(B x n_frames x n_features(576))
         
         #PERMUTATION
         inputsV = inputsV.permute((0, 2, 1)) #(B x n_features x chunk_size*framerate)
