@@ -586,6 +586,8 @@ class SoccerNetFrames(Dataset):
             feat_half2A = np.load(os.path.join(path_audio, game, "2_" + features_audio))
             feat_half2A = feat_half2A.reshape(-1, feat_half2A.shape[-1])
             
+            
+            #Half 1 
             i = 0
             while True:
                 if i % (chunk_size * 25) == 0:
@@ -600,7 +602,7 @@ class SoccerNetFrames(Dataset):
                 
                 i += frame_stride
             
-            print(np.array(self.frames).shape)
+            print(np.concatenate(self.frames).shape)
             print(np.array(frames_chunk).shape)
             print(asdf)
             
