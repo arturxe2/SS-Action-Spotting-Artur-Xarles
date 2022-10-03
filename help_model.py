@@ -12,4 +12,4 @@ model = mobilenet_v3_small()
 print(model)
 
 image = torch.randn([10, 3, 224, 398])
-model(image)
+print(model(image))
