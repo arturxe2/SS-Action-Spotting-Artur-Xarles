@@ -611,7 +611,8 @@ class ModelFrames(nn.Module):
         self.p_mask = p_mask
         self.model = model
         
-        self.mobilenet = 
+        self.mobilenet = mobilenet_v3_small(MobileNet_V3_Small_Weights)
+        self.mobilenet.classifier = torch.nn.Identity()
         
         
         #SS MODEL LAYERS

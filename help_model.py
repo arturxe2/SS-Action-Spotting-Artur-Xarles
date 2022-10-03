@@ -10,9 +10,9 @@ import torch
 from torchvision.models import mobilenet_v3_small, MobileNet_V3_Small_Weights
 
 model = mobilenet_v3_small(MobileNet_V3_Small_Weights)
-print(model)
 
 model.classifier = torch.nn.Identity()
+print(model)
 
 image = torch.randn([10, 3, 224, 398])
 print(model(image).shape)
