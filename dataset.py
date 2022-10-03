@@ -584,10 +584,8 @@ class OnlineSoccerNetFrames(Dataset):
         if store:
             
             self.path_list = []
-            self.halfs = []
+            self.path_list2 = []
             self.initial_frames = []
-            self.n_samples = []
-            self.clip_game = []
             z = 0
             for game in tqdm(self.listGames):
                 z += 1
@@ -717,10 +715,9 @@ class OnlineSoccerNetFrames(Dataset):
                     np.save(path + '/half1_chunk' + str(i) + '_featuresA.npy', feat_half1A[i, :, :])
                     np.save(path + '/half1_chunk' + str(i) + '_labels.npy', label_half1[i, :])
                     self.path_list.append(path + '/half1_chunk' + str(i) + '_')
-                    self.halfs.append(1)
                     self.initial_frames.append((i * 25 * stride) // 4 * 4 )
-                    self.clip_game.append(game)
-                    
+                    self.path_list2.append(os.path.join(self.path_frames, game, 'half1', 'frame ' ))
+                                           
                 #STORE HALF 2 FILES
                 feat_half2A = feat_half2A.numpy()
 
@@ -728,30 +725,27 @@ class OnlineSoccerNetFrames(Dataset):
                     np.save(path + '/half2_chunk' + str(i) + '_featuresA.npy', feat_half2A[i, :, :])
                     np.save(path + '/half2_chunk' + str(i) + '_labels.npy', label_half2[i, :])
                     self.path_list.append(path + '/half2_chunk' + str(i) + '_')
-                    self.halfs.append(2)
                     self.initial_frames.append(i * 25 * stride // 4 * 4)
-                    self.clip_game.append(game)
+                    self.path_list2.append(os.path.join(self.path_frames, game, 'half2', 'frame ' ))
     
                         
             #Concatenate features
             with open(self.path_store + '/chunk_list.pkl', 'wb') as f:
                 pickle.dump(self.path_list, f)
-            with open(self.path_store + '/halfs.pkl', 'wb') as f:
-                pickle.dump(self.halfs, f)
+            with open(self.path_store + '/path_list2.pkl', 'wb') as f:
+                pickle.dump(self.path_list2, f)
             with open(self.path_store + '/initial_frames.pkl', 'wb') as f:
                 pickle.dump(self.initial_frames, f)
-            with open(self.path_store + '/clip_game.pkl', 'wb') as f:
-                pickle.dump(self.clip_game, f)
+
                 
         else:
             with open(self.path_store + '/chunk_list.pkl', 'rb') as f:
                 self.path_list = pickle.load(f)
-            with open(self.path_store + '/halfs.pkl', 'rb') as f:
-                self.halfs = pickle.load(f)
+            with open(self.path_store + '/path_list2.pkl', 'rb') as f:
+                self.path_list2 = pickle.load(f)
             with open(self.path_store + '/initial_frames.pkl', 'rb') as f:
                 self.initial_frames = pickle.load(f)
-            with open(self.path_store + '/clip_game.pkl', 'rb') as f:
-                self.clip_game = pickle.load(f)
+
                 
         self.frames_clip = self.chunk_size * 25 // self.framestride
 
@@ -768,12 +762,11 @@ class OnlineSoccerNetFrames(Dataset):
             clip_targets (np.array): clip of targets for the spotting.
         """
         path = self.path_list[index]
-        half = self.halfs[index]
+        path2 = self.path_list2[index]
         initial_frame = self.initial_frames[index]
-        game = self.clip_game[index]
         frames = []
-        for i in range(self.frames_clip):
-            frames.append(io.imread(os.path.join(self.path_frames, game, 'half' + str(half), 'frame ' + str(initial_frame + i * 4) + '.jpg')))
+        for i in range(self.frame_clips):
+            frames.append(io.imread(os.path.join(path2 + str(initial_frame + i * 4) + '.jpg')))
         return torch.from_numpy(np.array(frames)), torch.from_numpy(np.load(path + 'featuresA.npy')), np.load(path + 'labels.npy')
 
 
