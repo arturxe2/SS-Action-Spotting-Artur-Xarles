@@ -712,8 +712,6 @@ class ModelFrames(nn.Module):
         #INPUTS TO FLOAT
         inputsV = inputsV.float() #(B x n_frames x H x W x C)
         inputsA = inputsA.float() #(B x chunk_size*framerate x n_features)
-        print(inputsV.shape)
-        print(inputsA.shape)
         
         inputsV = inputsV.permute((0, 1, 4, 2, 3)) #(B x n_frames x C x H x W)
         images_shape = inputsV.shape
