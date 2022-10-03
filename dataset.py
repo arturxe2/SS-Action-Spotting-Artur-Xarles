@@ -964,4 +964,4 @@ class SoccerNetFrames(Dataset):
     
     
 a = OnlineSoccerNetFrames()
-a.__getitem__(1)
+print(a.__getitem__(1))
