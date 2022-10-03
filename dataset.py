@@ -589,13 +589,12 @@ class OnlineSoccerNetFrames(Dataset):
                 feat_half2A = np.load(os.path.join(path_audio, game, "2_" + features_audio))
                 feat_half2A = feat_half2A.reshape(-1, feat_half2A.shape[-1])
                 
-                i = 59999
+                i = 100000
                 found1 = False
                 found2 = False
-                while i < 100000:
-                    print(i)
+                while i > 0:
                     ex1 = os.path.exists(os.path.join(self.path_frames, game, 'half1', 'frame ' + str(i) + '.jpg'))
-                    ex2 = os.path.exists(os.path.join(self.path_frames, game, 'half1', 'frame ' + str(i) + '.jpg'))
+                    ex2 = os.path.exists(os.path.join(self.path_frames, game, 'half2', 'frame ' + str(i) + '.jpg'))
                     
                     if (not found1) & ex1:
                         frames1 = i
