@@ -559,7 +559,7 @@ class OnlineSoccerNetFrames(Dataset):
                  path_audio = '/data-local/data3-ssd/axesparraguera',  
                  path_labels = "/data-net/datasets/SoccerNetv2/ResNET_TF2",
                  features_audio = 'audio_embeddings_2fps.npy', 
-                 split=["train"], framerate=2, chunk_size=5, framestride = 4, store = False):
+                 split=["train"], framerate=2, chunk_size=5, framestride = 4, store = True):
 
         self.listGames = getListGames(split)
         self.chunk_size = chunk_size
