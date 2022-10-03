@@ -962,7 +962,3 @@ class SoccerNetFrames(Dataset):
 
         return len(self.game_featsV)
     
-    
-a = OnlineSoccerNetFrames()
-a, b, c = (a.__getitem__(1))
-print(a.shape)
