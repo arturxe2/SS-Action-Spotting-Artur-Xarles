@@ -8,9 +8,9 @@ Created on Mon Oct  3 13:16:20 2022
 import torch
 import torchvision
 
-#from torchvision.models.video import mvit_v2_s, MViT_V2_S_Weights
+from torchvision.models import vit_b_16
 
-model = torchvision.models.video.MViT()
+model = vit_b_16()
 
 #model.classifier = torch.nn.Identity()
 print(model)
