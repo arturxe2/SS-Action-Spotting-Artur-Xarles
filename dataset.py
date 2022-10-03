@@ -593,6 +593,7 @@ class OnlineSoccerNetFrames(Dataset):
                 found1 = False
                 found2 = False
                 while i > 0:
+                    print(i)
                     ex1 = os.path.exists(os.path.join(self.path_frames, game, 'half1', 'frame ' + str(i) + '.jpg'))
                     ex2 = os.path.exists(os.path.join(self.path_frames, game, 'half2', 'frame ' + str(i) + '.jpg'))
                     
