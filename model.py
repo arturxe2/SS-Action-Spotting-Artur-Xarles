@@ -455,6 +455,10 @@ class Model2(nn.Module):
         
         #FC AND SIGMOID TO MAKE PREDICTIONS        
         outputs = self.sigm(self.fc2(self.relu(self.fc1(embeddings))))
+        
+        if realV.shape[0] == 0:
+            realV = inputsV[1:2, 1:2, :]
+            predsV = Vpreds[1:2, 1:2, :]
 
             
         return embeddingV, embeddingA, realV, predsV, realA, predsA, outputs
