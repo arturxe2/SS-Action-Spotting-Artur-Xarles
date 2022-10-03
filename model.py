@@ -621,7 +621,8 @@ class ModelFrames(nn.Module):
         #Convolutions (reduce dimensionality)
         self.conv1V = nn.Conv1d(576, d, 1, stride=1, bias=False)
         self.conv1A = nn.Conv1d(128, d, 1, stride=1, bias=False)
-        self.norm1 = nn.LayerNorm([self.chunk_size * 25 // self.framestride, d])
+        self.norm1V = nn.LayerNorm([self.chunk_size * 25 // self.framestride, d])
+        self.norm1A = nn.LayerNorm([self.chunk_size * self.framerate, d])
         self.norm2 = nn.LayerNorm([self.chunk_size * self.framerate + 1, d])
         self.norm3 = nn.LayerNorm([2 * self.chunk_size * self.framerate, d])
         
@@ -745,10 +746,10 @@ class ModelFrames(nn.Module):
             MA = torch.rand([inputsAmask.shape[0], inputsAmask.shape[1]]) < 0.05
         
         #LAYER NORMALIZATION
-        inputsV = self.norm1(inputsV) #(B x chunk_size*framerate x d)
-        inputsA = self.norm1(inputsA) #(B x chunk_size*framerate x d)
-        inputsVmask = self.norm1(inputsVmask) #(B x chunk_size*framerate x d)
-        inputsAmask = self.norm1(inputsAmask) #(B x chunk_size*framerate x d)
+        inputsV = self.norm1V(inputsV) #(B x chunk_size*framerate x d)
+        inputsA = self.norm1A(inputsA) #(B x chunk_size*framerate x d)
+        inputsVmask = self.norm1V(inputsVmask) #(B x chunk_size*framerate x d)
+        inputsAmask = self.norm1A(inputsAmask) #(B x chunk_size*framerate x d)
         
         #POSITIONAL ENCODING
         inputsV = inputsV + self.posV #(B x chunk_size*framerate x d)
