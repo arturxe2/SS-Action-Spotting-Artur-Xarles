@@ -752,6 +752,8 @@ class OnlineSoccerNetFrames(Dataset):
                 self.initial_frames = pickle.load(f)
             with open(self.path_store + '/clip_game.pkl', 'rb') as f:
                 self.clip_game = pickle.load(f)
+                
+        self.frames_clip = self.chunk_size * 25 // self.framestride
 
 
 
@@ -770,7 +772,7 @@ class OnlineSoccerNetFrames(Dataset):
         initial_frame = self.initial_frames[index]
         game = self.clip_game[index]
         frames = []
-        for i in range(self.chunk_size * 25 // self.framestride):
+        for i in range(self.frames_clip):
             frames.append(io.imread(os.path.join(self.path_frames, game, 'half' + str(half), 'frame ' + str(initial_frame + i * 4) + '.jpg')))
         return torch.from_numpy(np.array(frames)), torch.from_numpy(np.load(path + 'featuresA.npy')), np.load(path + 'labels.npy')
 

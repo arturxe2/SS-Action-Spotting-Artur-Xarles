@@ -51,7 +51,7 @@ def main(args):
                          path_labels = "/data-net/datasets/SoccerNetv2/ResNET_TF2",
                          path_store = '/data-local/data1-hdd/axesparraguera/SoccerNetFrames/trial',
                          features_audio = 'audio_embeddings_2fps.npy', 
-                         split=["valid"], framerate=2, chunk_size=5, framestride = 4, store = False)
+                         split=["valid"], framerate=args.framerate, chunk_size=args.chunk_size, framestride = 4, store = False)
             
     '''
     dataset_Test  = SoccerNetClipsTesting(path_baidu = args.baidu_path, 
