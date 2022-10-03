@@ -765,7 +765,7 @@ class OnlineSoccerNetFrames(Dataset):
         path2 = self.path_list2[index]
         initial_frame = self.initial_frames[index]
         frames = []
-        for i in range(self.frame_clips):
+        for i in range(self.frames_clips):
             frames.append(io.imread(os.path.join(path2 + str(initial_frame + i * 4) + '.jpg')))
         return torch.from_numpy(np.array(frames)), torch.from_numpy(np.load(path + 'featuresA.npy')), np.load(path + 'labels.npy')
 
