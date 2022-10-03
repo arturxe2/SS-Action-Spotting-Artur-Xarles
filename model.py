@@ -677,7 +677,7 @@ class ModelFrames(nn.Module):
         self.encoderM = nn.TransformerEncoder(encoder_layerM, 2)
         
         #Pooling layer
-        self.pool_layerAS = nn.MaxPool1d(chunk_size * framerate * 2, stride = 1)
+        self.pool_layerAS = nn.MaxPool1d(chunk_size * 25 // self.framestride + (self.chunk_size * self.framerate), stride = 1)
         
         #Linear layer
         self.fc1 = nn.Linear(d, 2*d)
