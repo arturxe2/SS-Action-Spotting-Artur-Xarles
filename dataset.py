@@ -589,11 +589,7 @@ class OnlineSoccerNetFrames(Dataset):
             self.n_samples = []
             self.clip_game = []
             
-            z = 0
             for game in tqdm(self.listGames):
-                z += 1
-                if z == 10:
-                    break
                 
                 feat_half1A = np.load(os.path.join(path_audio, game, "1_" + features_audio))
                 feat_half1A = feat_half1A.reshape(-1, feat_half1A.shape[-1])
