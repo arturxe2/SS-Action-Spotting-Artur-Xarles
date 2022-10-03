@@ -600,7 +600,7 @@ class ModelFrames(nn.Module):
         OUTPUTS: two Tensors of shape (batch_size,d)
         """
 
-        super(Model2, self).__init__()
+        super(ModelFrames, self).__init__()
         
         #MODEL PARAMETERS
         
