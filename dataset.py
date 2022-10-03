@@ -566,6 +566,7 @@ class OnlineSoccerNetFrames(Dataset):
         self.listGames = getListGames(split)
         self.chunk_size = chunk_size
         self.framestride = framestride
+        self.framerate = framerate
         self.path_frames = path_frames
         self.path_store = path_store
         
