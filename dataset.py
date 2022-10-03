@@ -15,6 +15,7 @@ from SoccerNet.Evaluation.utils import AverageMeter, EVENT_DICTIONARY_V2, INVERS
 import json
 import pickle
 import skimage.io as io
+import math
 
 
 #Function to extract features of a clip
@@ -558,6 +559,7 @@ class OnlineSoccerNetFrames(Dataset):
     def __init__(self, path_frames = '/data-local/data1-hdd/axesparraguera/SoccerNetFrames', 
                  path_audio = '/data-local/data3-ssd/axesparraguera',  
                  path_labels = "/data-net/datasets/SoccerNetv2/ResNET_TF2",
+                 path_store = '/data-local/data1-hdd/axesparraguera/SoccerNetFrames/trial',
                  features_audio = 'audio_embeddings_2fps.npy', 
                  split=["train"], framerate=2, chunk_size=5, framestride = 4, store = True):
 
@@ -565,6 +567,7 @@ class OnlineSoccerNetFrames(Dataset):
         self.chunk_size = chunk_size
         self.framestride = framestride
         self.path_frames = path_frames
+        self.path_store = path_store
         
         self.dict_event = EVENT_DICTIONARY_V2
         self.num_classes = 17
@@ -580,9 +583,16 @@ class OnlineSoccerNetFrames(Dataset):
         if store:
             
             self.path_list = []
+            self.halfs = []
+            self.initial_frames = []
             self.n_samples = []
+            self.clip_game = []
             
+            z = 0
             for game in tqdm(self.listGames):
+                z += 1
+                if z == 10:
+                    break
                 
                 feat_half1A = np.load(os.path.join(path_audio, game, "1_" + features_audio))
                 feat_half1A = feat_half1A.reshape(-1, feat_half1A.shape[-1])
@@ -604,48 +614,34 @@ class OnlineSoccerNetFrames(Dataset):
                         found2 = True
                     if found1 & found2:
                         break
-                    i = i - self.framestride
-                
-                print(frames1)
-                print(frames2)
-                print(asdf)
-                    
+                    i -= self.framestride
                     
     
                 #Check same size Visual and Audio features
                 
-                #Visual features bigger than audio features
-                if feat_half1V.shape[0] > feat_half1A.shape[0]:
-                    feat_half1A_aux = np.zeros((feat_half1V.shape[0], feat_half1A.shape[1]))
+                #Visual frames bigger than audio features
+                if math.ceil(frames1 % 25) * 2 > feat_half1A.shape[0]:
+                    feat_half1A_aux = np.zeros((math.ceil(frames1 % 25) * 2, feat_half1A.shape[1]))
                     feat_half1A_aux[:feat_half1A.shape[0]] = feat_half1A
                     feat_half1A_aux[feat_half1A.shape[0]:] = feat_half1A[feat_half1A.shape[0]-1]
                     feat_half1A = feat_half1A_aux
                     
-                if feat_half2V.shape[0] > feat_half2A.shape[0]:
-                    feat_half2A_aux = np.zeros((feat_half2V.shape[0], feat_half2A.shape[1]))
+                if math.ceil(frames2 % 25) * 2 > feat_half2A.shape[0]:
+                    feat_half2A_aux = np.zeros((math.ceil(frames2 % 25) * 2, feat_half2A.shape[1]))
                     feat_half2A_aux[:feat_half2A.shape[0]] = feat_half2A
                     feat_half2A_aux[feat_half2A.shape[0]:] = feat_half2A[feat_half2A.shape[0]-1]
                     feat_half2A = feat_half2A_aux
-                    
-                #Audio features bigger than visual features
-                if feat_half1A.shape[0] > feat_half1V.shape[0]:
-                    feat_half1V_aux = np.zeros((feat_half1A.shape[0], feat_half1V.shape[1]))
-                    feat_half1V_aux[:feat_half1V.shape[0]] = feat_half1V
-                    feat_half1V_aux[feat_half1V.shape[0]:] = feat_half1V[feat_half1V.shape[0]-1]
-                    feat_half1V = feat_half1V_aux
-                    
-                if feat_half2A.shape[0] > feat_half2V.shape[0]:
-                    feat_half2V_aux = np.zeros((feat_half2A.shape[0], feat_half2V.shape[1]))
-                    feat_half2V_aux[:feat_half2V.shape[0]] = feat_half2V
-                    feat_half2V_aux[feat_half2V.shape[0]:] = feat_half2V[feat_half2V.shape[0]-1]
-                    feat_half2V = feat_half2V_aux     
-                    
+                
+                #More audio than frames
+                if math.ceil(frames1 % 25) * 2 < feat_half1A.shape[0]:
+                    feat_half1A = feat_half1A[math.ceil(frames1 % 25) * 2, :]
+                
+                if math.ceil(frames2 % 25) * 2 < feat_half2A.shape[0]:
+                    feat_half2A = feat_half2A[math.ceil(frames2 % 25) * 2, :]
     
                     
                 #Generate clips from features
-                feat_half1V = feats2clip(torch.from_numpy(feat_half1V), stride=stride, clip_length=self.chunk_size) 
-                feat_half1A = feats2clip(torch.from_numpy(feat_half1A), stride=stride, clip_length=self.chunk_size) 
-                feat_half2V = feats2clip(torch.from_numpy(feat_half2V), stride=stride, clip_length=self.chunk_size) 
+                feat_half1A = feats2clip(torch.from_numpy(feat_half1A), stride=stride, clip_length=self.chunk_size)  
                 feat_half2A = feats2clip(torch.from_numpy(feat_half2A), stride=stride, clip_length=self.chunk_size) 
     
                 
@@ -654,9 +650,9 @@ class OnlineSoccerNetFrames(Dataset):
                 labels = json.load(open(os.path.join(path_labels, game, self.labels)))
     
     
-                label_half1 = np.zeros((feat_half1V.shape[0], self.num_classes+1))
+                label_half1 = np.zeros((feat_half1A.shape[0], self.num_classes+1))
                 label_half1[:,0]=1 # those are BG classes
-                label_half2 = np.zeros((feat_half2V.shape[0], self.num_classes+1))
+                label_half2 = np.zeros((feat_half2A.shape[0], self.num_classes+1))
                 label_half2[:,0]=1 # those are BG classes
                 
                 for annotation in labels["annotations"]:
@@ -714,24 +710,26 @@ class OnlineSoccerNetFrames(Dataset):
                     os.makedirs(path)
                 
                 #STORE HALF 1 FILES
-                feat_half1V = feat_half1V.numpy()
                 feat_half1A = feat_half1A.numpy()
 
-                for i in range(feat_half1V.shape[0]):
-                    np.save(path + '/half1_chunk' + str(i) + '_featuresV.npy', feat_half1V[i, :, :])
+                for i in range(feat_half1A.shape[0]):
                     np.save(path + '/half1_chunk' + str(i) + '_featuresA.npy', feat_half1A[i, :, :])
                     np.save(path + '/half1_chunk' + str(i) + '_labels.npy', label_half1[i, :])
                     self.path_list.append(path + '/half1_chunk' + str(i) + '_')
+                    self.halfs.append(1)
+                    self.initial_frames.append((i * 25 * stride) // 4 * 4 )
+                    self.clip_game.append(game)
                     
                 #STORE HALF 2 FILES
-                feat_half2V = feat_half2V.numpy()
                 feat_half2A = feat_half2A.numpy()
 
-                for i in range(feat_half2V.shape[0]):
-                    np.save(path + '/half2_chunk' + str(i) + '_featuresV.npy', feat_half2V[i, :, :])
+                for i in range(feat_half2A.shape[0]):
                     np.save(path + '/half2_chunk' + str(i) + '_featuresA.npy', feat_half2A[i, :, :])
                     np.save(path + '/half2_chunk' + str(i) + '_labels.npy', label_half2[i, :])
                     self.path_list.append(path + '/half2_chunk' + str(i) + '_')
+                    self.halfs.append(2)
+                    self.initial_frames.append(i * 25 * stride)
+                    self.clip_game.append(game)
     
                         
             #Concatenate features
@@ -755,7 +753,13 @@ class OnlineSoccerNetFrames(Dataset):
             clip_targets (np.array): clip of targets for the spotting.
         """
         path = self.path_list[index]
-        return torch.from_numpy(np.load(path + 'featuresV.npy')), torch.from_numpy(np.load(path + 'featuresA.npy')), np.load(path + 'labels.npy')
+        half = self.halfs[index]
+        initial_frame = self.initial_frames[index]
+        game = self.clip_game[index]
+        frames = []
+        for i in range(self.chunk_size * 25 // self.framestride):
+            frames.append(io.imread(os.path.join(self.path_frames, game, 'half' + str(half), 'frame ' + str(initial_frame + i * 4) + '.jpg')))
+        return torch.from_numpy(np.array(frames)), torch.from_numpy(np.load(path + 'featuresA.npy')), np.load(path + 'labels.npy')
 
 
     def __len__(self):
@@ -958,4 +962,8 @@ class SoccerNetFrames(Dataset):
         return len(self.game_featsV)
     
     
-OnlineSoccerNetFrames()
+OnlineSoccerNetFrames(path_frames = '/data-local/data1-hdd/axesparraguera/SoccerNetFrames', 
+             path_audio = '/data-local/data3-ssd/axesparraguera',  
+             path_labels = "/data-net/datasets/SoccerNetv2/ResNET_TF2",
+             features_audio = 'audio_embeddings_2fps.npy', 
+             split=["train"], framerate=2, chunk_size=5, framestride = 4, store = True)
