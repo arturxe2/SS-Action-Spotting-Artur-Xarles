@@ -14,5 +14,5 @@ model = mobilenet_v3_small(MobileNet_V3_Small_Weights)
 model.classifier = torch.nn.Identity()
 print(model)
 
-image = torch.randn([10, 3, 224, 398])
+image = torch.randn([10, 31, 3, 224, 398])
 print(model(image).shape)
