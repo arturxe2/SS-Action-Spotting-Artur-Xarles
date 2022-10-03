@@ -645,7 +645,7 @@ class ModelFrames(nn.Module):
         self.clasA = copy.deepcopy(self.clasVmask)
         
         #Positional embeddings
-        self.posVmask = nn.Parameter(torch.randn([self.chunk_size * self.framerate, d]))
+        self.posVmask = nn.Parameter(torch.randn([self.chunk_size * 25 // self.framestride, d]))
         self.posAmask = nn.Parameter(torch.randn([self.chunk_size * self.framerate, d]))
         self.posV = copy.deepcopy(self.posVmask)
         self.posA = copy.deepcopy(self.posAmask)
