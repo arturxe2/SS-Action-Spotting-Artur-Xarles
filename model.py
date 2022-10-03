@@ -621,7 +621,7 @@ class ModelFrames(nn.Module):
         #Convolutions (reduce dimensionality)
         self.conv1V = nn.Conv1d(576, d, 1, stride=1, bias=False)
         self.conv1A = nn.Conv1d(128, d, 1, stride=1, bias=False)
-        self.norm1V = nn.LayerNorm([self.chunk_size / framerate * 25 // self.framestride, d])
+        self.norm1V = nn.LayerNorm([((self.chunk_size / self.framerate) * 25) // self.framestride, d])
         self.norm1A = nn.LayerNorm([self.chunk_size * self.framerate, d])
         self.norm2 = nn.LayerNorm([self.chunk_size * self.framerate + 1, d])
         self.norm3 = nn.LayerNorm([2 * self.chunk_size * self.framerate, d])
