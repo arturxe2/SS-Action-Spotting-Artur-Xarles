@@ -554,6 +554,211 @@ class SoccerNetClipsTesting(Dataset):
         return len(self.listGames)
     
     
+class OnlineSoccerNetFrames(Dataset):
+    def __init__(self, path_frames = '/data-local/data1-hdd/axesparraguera/SoccerNetFrames', 
+                 path_audio = '/data-local/data3-ssd/axesparraguera',  
+                 path_labels = "/data-net/datasets/SoccerNetv2/ResNET_TF2",
+                 features_audio = 'audio_embeddings_2fps.npy', 
+                 split=["train"], framerate=2, chunk_size=5, framestride = 4, store = False):
+
+        self.listGames = getListGames(split)
+        self.chunk_size = chunk_size
+        self.framestride = framestride
+        self.path_frames = path_frames
+        
+        self.dict_event = EVENT_DICTIONARY_V2
+        self.num_classes = 17
+        self.labels="Labels-v2.json"
+
+        logging.info("Pre-compute clips")
+        
+        self.game_frames = list()
+        self.game_featsA = list()
+        self.game_labels = list()
+        stride = self.chunk_size
+        
+        if store:
+            
+            self.path_list = []
+            self.n_samples = []
+            
+            for game in tqdm(self.listGames):
+                
+                feat_half1A = np.load(os.path.join(path_audio, game, "1_" + features_audio))
+                feat_half1A = feat_half1A.reshape(-1, feat_half1A.shape[-1])
+                feat_half2A = np.load(os.path.join(path_audio, game, "2_" + features_audio))
+                feat_half2A = feat_half2A.reshape(-1, feat_half2A.shape[-1])
+                
+                i = 67496
+                found1 = False
+                found2 = False
+                while i < 100000:
+                    ex1 = os.path.exists(os.path.join(self.path_frames, game, 'half1', 'frame ' + str(i) + '.jpg'))
+                    ex2 = os.path.exists(os.path.join(self.path_frames, game, 'half1', 'frame ' + str(i) + '.jpg'))
+                    
+                    if (not found1) & ex1:
+                        frames1 = i
+                    if (not found2) & ex2:
+                        frames2 = i
+                    if found1 & found2:
+                        break
+                
+                print(frames1)
+                print(frames2)
+                print(asdf)
+                    
+                    
+    
+                #Check same size Visual and Audio features
+                
+                #Visual features bigger than audio features
+                if feat_half1V.shape[0] > feat_half1A.shape[0]:
+                    feat_half1A_aux = np.zeros((feat_half1V.shape[0], feat_half1A.shape[1]))
+                    feat_half1A_aux[:feat_half1A.shape[0]] = feat_half1A
+                    feat_half1A_aux[feat_half1A.shape[0]:] = feat_half1A[feat_half1A.shape[0]-1]
+                    feat_half1A = feat_half1A_aux
+                    
+                if feat_half2V.shape[0] > feat_half2A.shape[0]:
+                    feat_half2A_aux = np.zeros((feat_half2V.shape[0], feat_half2A.shape[1]))
+                    feat_half2A_aux[:feat_half2A.shape[0]] = feat_half2A
+                    feat_half2A_aux[feat_half2A.shape[0]:] = feat_half2A[feat_half2A.shape[0]-1]
+                    feat_half2A = feat_half2A_aux
+                    
+                #Audio features bigger than visual features
+                if feat_half1A.shape[0] > feat_half1V.shape[0]:
+                    feat_half1V_aux = np.zeros((feat_half1A.shape[0], feat_half1V.shape[1]))
+                    feat_half1V_aux[:feat_half1V.shape[0]] = feat_half1V
+                    feat_half1V_aux[feat_half1V.shape[0]:] = feat_half1V[feat_half1V.shape[0]-1]
+                    feat_half1V = feat_half1V_aux
+                    
+                if feat_half2A.shape[0] > feat_half2V.shape[0]:
+                    feat_half2V_aux = np.zeros((feat_half2A.shape[0], feat_half2V.shape[1]))
+                    feat_half2V_aux[:feat_half2V.shape[0]] = feat_half2V
+                    feat_half2V_aux[feat_half2V.shape[0]:] = feat_half2V[feat_half2V.shape[0]-1]
+                    feat_half2V = feat_half2V_aux     
+                    
+    
+                    
+                #Generate clips from features
+                feat_half1V = feats2clip(torch.from_numpy(feat_half1V), stride=stride, clip_length=self.chunk_size) 
+                feat_half1A = feats2clip(torch.from_numpy(feat_half1A), stride=stride, clip_length=self.chunk_size) 
+                feat_half2V = feats2clip(torch.from_numpy(feat_half2V), stride=stride, clip_length=self.chunk_size) 
+                feat_half2A = feats2clip(torch.from_numpy(feat_half2A), stride=stride, clip_length=self.chunk_size) 
+    
+                
+                
+                # Load labels
+                labels = json.load(open(os.path.join(path_labels, game, self.labels)))
+    
+    
+                label_half1 = np.zeros((feat_half1V.shape[0], self.num_classes+1))
+                label_half1[:,0]=1 # those are BG classes
+                label_half2 = np.zeros((feat_half2V.shape[0], self.num_classes+1))
+                label_half2[:,0]=1 # those are BG classes
+                
+                for annotation in labels["annotations"]:
+    
+                    time = annotation["gameTime"]
+                    event = annotation["label"]
+    
+                    half = int(time[0])
+                    
+    
+                    minutes = int(time[-5:-3])
+                    seconds = int(time[-2::])
+                    frame = framerate * ( seconds + 60 * minutes ) 
+    
+                    if event not in self.dict_event:
+                        continue
+                    label = self.dict_event[event]
+    
+                    # if label outside temporal of view
+                    if half == 1 and frame//stride>=label_half1.shape[0]:
+                        continue
+                    if half == 2 and frame//stride>=label_half2.shape[0]:
+                        continue
+                    a = frame // stride
+                    
+                    if half == 1:
+                        if self.chunk_size >= stride:
+                            for i in range(self.chunk_size // stride):
+                                label_half1[max(a - self.chunk_size // stride + 1 + i, 0)][0] = 0 # not BG anymore
+                                label_half1[max(a - self.chunk_size // stride + 1 + i, 0)][label+1] = 1
+                            #label_half1[max(a - self.chunk_size//stride + 1, 0) : (a + 1)][0] = 0 # not BG anymore
+                            
+                        else:
+                            a2 = (frame - self.chunk_size) // stride
+                            if a != a2:
+                                label_half1[a][0] = 0
+                                label_half1[a][label+1] = 1
+    
+                    if half == 2:
+                        if self.chunk_size >= stride:
+                            for i in range(self.chunk_size // stride):
+                                label_half2[max(a - self.chunk_size // stride + 1 + i, 0)][0] = 0 # not BG anymore
+                                label_half2[max(a - self.chunk_size // stride + 1 + i, 0)][label+1] = 1 # that's my class
+                                
+                        else:
+                            a2 = (frame - self.chunk_size) // stride
+                            if a != a2:
+                                label_half2[a][0] = 0
+                                label_half2[a][label+1] = 1
+                                
+                #Store path
+                path = os.path.join(self.path_store, game)
+                exists = os.path.exists(path)
+                if not exists:
+                    os.makedirs(path)
+                
+                #STORE HALF 1 FILES
+                feat_half1V = feat_half1V.numpy()
+                feat_half1A = feat_half1A.numpy()
+
+                for i in range(feat_half1V.shape[0]):
+                    np.save(path + '/half1_chunk' + str(i) + '_featuresV.npy', feat_half1V[i, :, :])
+                    np.save(path + '/half1_chunk' + str(i) + '_featuresA.npy', feat_half1A[i, :, :])
+                    np.save(path + '/half1_chunk' + str(i) + '_labels.npy', label_half1[i, :])
+                    self.path_list.append(path + '/half1_chunk' + str(i) + '_')
+                    
+                #STORE HALF 2 FILES
+                feat_half2V = feat_half2V.numpy()
+                feat_half2A = feat_half2A.numpy()
+
+                for i in range(feat_half2V.shape[0]):
+                    np.save(path + '/half2_chunk' + str(i) + '_featuresV.npy', feat_half2V[i, :, :])
+                    np.save(path + '/half2_chunk' + str(i) + '_featuresA.npy', feat_half2A[i, :, :])
+                    np.save(path + '/half2_chunk' + str(i) + '_labels.npy', label_half2[i, :])
+                    self.path_list.append(path + '/half2_chunk' + str(i) + '_')
+    
+                        
+            #Concatenate features
+            with open(self.path_store + '/chunk_list.pkl', 'wb') as f:
+                pickle.dump(self.path_list, f)
+                
+        else:
+            with open(self.path_store + '/chunk_list.pkl', 'rb') as f:
+                self.path_list = pickle.load(f)
+
+
+
+
+    def __getitem__(self, index):
+        """
+        Args:
+            index (int): Index
+        Returns:
+            clip_feat (np.array): clip of features.
+            clip_labels (np.array): clip of labels for the segmentation.
+            clip_targets (np.array): clip of targets for the spotting.
+        """
+        path = self.path_list[index]
+        return torch.from_numpy(np.load(path + 'featuresV.npy')), torch.from_numpy(np.load(path + 'featuresA.npy')), np.load(path + 'labels.npy')
+
+
+    def __len__(self):
+
+        return(len(self.path_list))
+    
 #SoccerNet frames in ram
 class SoccerNetFrames(Dataset):
     def __init__(self, path_frames = '/data-local/data1-hdd/axesparraguera/SoccerNetFrames', 
@@ -603,6 +808,21 @@ class SoccerNetFrames(Dataset):
                 i += frame_stride
             
             print(np.concatenate(self.frames).shape)
+            
+            #Half 2 
+            i = 0
+            while True:
+                if i % (chunk_size * 25) == 0:
+                    frames_chunk = list()
+                    if i != 0:
+                        self.frames.append(frames_chunk)
+                
+                try:
+                    frames_chunk.append(io.imread(os.path.join(path_frames, game, 'half1', 'frame ' + str(i) + '.jpg')))
+                except:
+                    break
+                
+                i += frame_stride
             print(np.array(frames_chunk).shape)
             print(asdf)
             
@@ -735,4 +955,4 @@ class SoccerNetFrames(Dataset):
         return len(self.game_featsV)
     
     
-SoccerNetFrames()
+OnlineSoccerNetFrames()
