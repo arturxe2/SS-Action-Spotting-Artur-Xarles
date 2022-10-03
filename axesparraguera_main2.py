@@ -36,7 +36,7 @@ def main(args):
                          path_labels = "/data-net/datasets/SoccerNetv2/ResNET_TF2",
                          path_store = '/data-local/data1-hdd/axesparraguera/SoccerNetFrames/trial',
                          features_audio = 'audio_embeddings_2fps.npy', 
-                         split=["train"], framerate=2, chunk_size=5, framestride = 4, store = False)
+                         split=["train"], framerate=2, chunk_size=5, framestride = 4, store = True)
                
             dataset_Valid = OnlineSoccerNetFrames(path_frames = '/data-local/data1-hdd/axesparraguera/SoccerNetFrames', 
                          path_audio = '/data-local/data3-ssd/axesparraguera',  
