@@ -10,7 +10,7 @@ import torchvision
 
 #from torchvision.models.video import mvit_v2_s, MViT_V2_S_Weights
 
-model = torchvision.models.video.mvit_v2_s()
+model = torchvision.models.video.mvit_v1_b()
 
 #model.classifier = torch.nn.Identity()
 print(model)
