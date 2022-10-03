@@ -606,7 +606,7 @@ class ModelFrames(nn.Module):
         
         self.num_classes = num_classes
         self.d = d
-        self.chunk_size = chunk_size * framerate
+        self.chunk_size = chunk_size
         self.framerate = framerate
         self.p_mask = p_mask
         self.model = model
