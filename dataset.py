@@ -594,10 +594,9 @@ class SoccerNetFrames(Dataset):
                     if i != 0:
                         self.frames.append(frames_chunk)
                 
-                a = io.imread(os.path.join(path_frames, game, 'half1', 'frame_' + str(i) + '.jpg'))
                 
                 try:
-                    frames_chunk.append(io.imread(os.path.join(path_frames, game, 'half1', 'frame_' + str(i) + '.jpg')))
+                    frames_chunk.append(io.imread(os.path.join(path_frames, game, 'half1', 'frame ' + str(i) + '.jpg')))
                 except:
                     break
                 
