@@ -134,6 +134,8 @@ class Model(nn.Module):
         
         inputsV = inputsV.float() #(B x chunk_size*framerate x n_features)
         inputsA = inputsA.float()
+        print(inputsV.shape)
+        print(inputsA.shape)
         
 
         #Masked features
