@@ -595,6 +595,7 @@ class SoccerNetFrames(Dataset):
                         self.frames.append(frames_chunk)
                 a = io.imread(os.path.join(path_frames, game, 'half1', 'frame ' + str(i) + '.jpg'))
                 print(a)
+                print(a.shape)
                 print(asdf)
                 
                 try:
