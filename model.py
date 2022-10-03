@@ -625,7 +625,7 @@ class ModelFrames(nn.Module):
         self.norm1A = nn.LayerNorm([self.chunk_size * self.framerate, d])
         self.norm2V = nn.LayerNorm([chunk_size * 25 // self.framestride + 1, d])
         self.norm2A = nn.LayerNorm([self.chunk_size * self.framerate + 1, d])
-        self.norm3 = nn.LayerNorm([2 * self.chunk_size * self.framerate, d])
+        self.norm3 = nn.LayerNorm([chunk_size * 25 // self.framestride + (self.chunk_size * self.framerate), d])
         
         #Masked tokens
         self.mask_tokenV = nn.Parameter(torch.randn(d))
