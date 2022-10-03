@@ -599,8 +599,10 @@ class OnlineSoccerNetFrames(Dataset):
                     
                     if (not found1) & ex1:
                         frames1 = i
+                        found1 = True
                     if (not found2) & ex2:
                         frames2 = i
+                        found2 = True
                     if found1 & found2:
                         break
                     i = i - self.framestride
