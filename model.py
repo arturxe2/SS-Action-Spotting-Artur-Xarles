@@ -623,7 +623,8 @@ class ModelFrames(nn.Module):
         self.conv1A = nn.Conv1d(128, d, 1, stride=1, bias=False)
         self.norm1V = nn.LayerNorm([chunk_size * 25 // self.framestride, d])
         self.norm1A = nn.LayerNorm([self.chunk_size * self.framerate, d])
-        self.norm2 = nn.LayerNorm([self.chunk_size * self.framerate + 1, d])
+        self.norm2V = nn.LayerNorm([chunk_size * 25 // self.framestride + 1, d])
+        self.norm2A = nn.LayerNorm([self.chunk_size * self.framerate + 1, d])
         self.norm3 = nn.LayerNorm([2 * self.chunk_size * self.framerate, d])
         
         #Masked tokens
