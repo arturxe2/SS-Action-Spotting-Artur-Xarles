@@ -588,7 +588,6 @@ class SoccerNetFrames(Dataset):
             
             i = 0
             while True:
-                print(i)
                 if i % (chunk_size * 25) == 0:
                     frames_chunk = list()
                     if i != 0:
