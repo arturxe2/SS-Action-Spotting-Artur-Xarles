@@ -9,9 +9,9 @@ import torch
 import torchvision
 import torchvision.transforms as T
 
-from torchvision.models import vit_b_16
+from torchvision.models import vit_b_16, ViT_B_16_Weights
 
-model = vit_b_16()
+model = vit_b_16(ViT_B_16_Weights)
 transform = T.Resize((224,224))
 model.heads = torch.nn.Identity()
 #model.classifier = torch.nn.Identity()
