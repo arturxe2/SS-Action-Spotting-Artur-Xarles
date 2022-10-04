@@ -10,7 +10,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 import copy
-from torchvision.models import mobilenet_v3_small, MobileNet_V3_Small_Weights, vit_b_16, ViT_B_16_Weights
+from torchvision.models import mobilenet_v3_small, MobileNet_V3_Small_Weights, swin_t, Swin_T_Weights
 import torchvision.transforms as T
 
 
@@ -620,7 +620,7 @@ class ModelFrames(nn.Module):
             self.mobilenet.classifier = torch.nn.Identity()
             self.conv1V = nn.Conv1d(576, d, 1, stride=1, bias=False)
         elif backbone == 'vit':
-            self.vit = vit_b_16(ViT_B_16_Weights)
+            self.vit = swin_t(Swin_T_Weights.DEFAULT)
             self.vit.heads = torch.nn.Identity()
             self.conv1V = nn.Conv1d(768, d, 1, stride=1, bias=False)
             self.transform = T.Resize((224,224))
@@ -732,7 +732,7 @@ class ModelFrames(nn.Module):
         if self.backbone == 'mobilenet':
             inputsV = self.mobilenet(inputsV) #(n x 576)
         elif self.backbone == 'vit':
-            inputsV = self.transform(inputsV)
+            #inputsV = self.transform(inputsV)
             inputsV = self.vit(inputsV)
             
         inputsV = inputsV.view(images_shape[0], images_shape[1], -1) #(B x n_frames x n_features(576))
