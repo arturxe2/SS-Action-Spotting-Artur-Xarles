@@ -11,7 +11,7 @@ import torchvision.transforms as T
 
 from torchvision.models import swin_s, Swin_S_Weights
 
-model = swin_s(weights = Swin_S_Weights())
+model = swin_s(weights = Swin_S_Weights.DEFAULT)
 
 transform = T.Resize((224,224))
 model.head = torch.nn.Identity()
