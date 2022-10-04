@@ -22,5 +22,5 @@ images = transform(image)
 
 print(images.shape)
 #image = image.view(-1, 3, 224, 398)
-output = model(image)
+output = model(images)
 print(output.shape)
