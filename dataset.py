@@ -25,7 +25,7 @@ def read_images(image_paths_list):
     images = Parallel(n_jobs=24, verbose=5)(
         delayed(cv2.imread)(f) for f in image_paths_list
     )
-    return images
+    return np.array(images)
 
 
 #Function to extract features of a clip
@@ -771,7 +771,7 @@ class OnlineSoccerNetFrames(Dataset):
         """
         path = self.path_list[index]
         frames_path = self.frames_path[index]
-        frames = np.array(read_images(frames_path))
+        frames = read_images(frames_path)
 
         return torch.from_numpy(frames), torch.from_numpy(np.load(path + 'featuresA.npy')), np.load(path + 'labels.npy')
 
