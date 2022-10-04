@@ -17,6 +17,15 @@ import pickle
 import skimage.io as io
 import math
 import cv2
+from joblib import Parallel, delayed
+
+
+
+def read_images(image_paths_list):
+    images = Parallel(n_jobs=4, verbose=5)(
+        delayed(cv2.imread)(f) for f in image_paths_list
+    )
+    return images
 
 
 #Function to extract features of a clip
@@ -585,8 +594,7 @@ class OnlineSoccerNetFrames(Dataset):
         if store:
             
             self.path_list = []
-            self.path_list2 = []
-            self.initial_frames = []
+            self.frames_path = []
             z = 0
             for game in tqdm(self.listGames):
                 z += 1
@@ -711,14 +719,15 @@ class OnlineSoccerNetFrames(Dataset):
                     os.makedirs(path)
                 
                 #STORE HALF 1 FILES
+                self.frames_clip = self.chunk_size * 25 // self.framestride
                 feat_half1A = feat_half1A.numpy()
 
                 for i in range(feat_half1A.shape[0]):
                     np.save(path + '/half1_chunk' + str(i) + '_featuresA.npy', feat_half1A[i, :, :])
                     np.save(path + '/half1_chunk' + str(i) + '_labels.npy', label_half1[i, :])
                     self.path_list.append(path + '/half1_chunk' + str(i) + '_')
-                    self.initial_frames.append((i * 25 * stride) // 4 * 4 )
-                    self.path_list2.append(os.path.join(self.path_frames, game, 'half1', 'frame ' ))
+                    self.frames_path.append([os.path.join(self.path_frames, game, 'half1', 'frame ' + str((i * 25 * stride) // 4 * 4 + j * 4)) for j in range(self.frames_clip)])
+                    #self.path_list2.append(os.path.join(self.path_frames, game, 'half1', 'frame ' ))
                                            
                 #STORE HALF 2 FILES
                 feat_half2A = feat_half2A.numpy()
@@ -727,26 +736,23 @@ class OnlineSoccerNetFrames(Dataset):
                     np.save(path + '/half2_chunk' + str(i) + '_featuresA.npy', feat_half2A[i, :, :])
                     np.save(path + '/half2_chunk' + str(i) + '_labels.npy', label_half2[i, :])
                     self.path_list.append(path + '/half2_chunk' + str(i) + '_')
-                    self.initial_frames.append((i * 25 * stride) // 4 * 4)
-                    self.path_list2.append(os.path.join(self.path_frames, game, 'half2', 'frame ' ))
+                    self.frames_path.append([os.path.join(self.path_frames, game, 'half2', 'frame ' + str((i * 25 * stride) // 4 * 4 + j * 4)) for j in range(self.frames_clip)])
+                    #self.path_list2.append(os.path.join(self.path_frames, game, 'half2', 'frame ' ))
     
                         
             #Concatenate features
             with open(self.path_store + '/chunk_list.pkl', 'wb') as f:
                 pickle.dump(self.path_list, f)
-            with open(self.path_store + '/path_list2.pkl', 'wb') as f:
-                pickle.dump(self.path_list2, f)
-            with open(self.path_store + '/initial_frames.pkl', 'wb') as f:
-                pickle.dump(self.initial_frames, f)
+            with open(self.path_store + '/frames_path.pkl', 'wb') as f:
+                pickle.dump(self.frames_path, f)
 
                 
         else:
             with open(self.path_store + '/chunk_list.pkl', 'rb') as f:
                 self.path_list = pickle.load(f)
-            with open(self.path_store + '/path_list2.pkl', 'rb') as f:
-                self.path_list2 = pickle.load(f)
-            with open(self.path_store + '/initial_frames.pkl', 'rb') as f:
-                self.initial_frames = pickle.load(f)
+            with open(self.path_store + '/frames_path.pkl', 'rb') as f:
+                self.frames_path = pickle.load(f)
+
 
                 
         self.frames_clip = self.chunk_size * 25 // self.framestride
@@ -764,11 +770,8 @@ class OnlineSoccerNetFrames(Dataset):
             clip_targets (np.array): clip of targets for the spotting.
         """
         path = self.path_list[index]
-        path2 = self.path_list2[index]
-        initial_frame = self.initial_frames[index]
-        frames = np.empty((self.frames_clip, 224, 398, 3))
-        for i in range(self.frames_clip):
-            frames[i, :, :, :] = cv2.imread(os.path.join(path2 + str(initial_frame + i * 4) + '.jpg'))
+        frames_path = self.frames_path[index]
+        frames = np.array(read_images(frames_path))
 
         return torch.from_numpy(frames), torch.from_numpy(np.load(path + 'featuresA.npy')), np.load(path + 'labels.npy')
 
