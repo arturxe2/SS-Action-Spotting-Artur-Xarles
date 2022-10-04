@@ -615,6 +615,7 @@ class ModelFrames(nn.Module):
         self.framestride = framestride
         self.backbone = backbone
         
+        #MODEL BACKBONES (VISUAL ONES)
         if backbone == 'mobilenet':
             self.mobilenet = mobilenet_v3_small(MobileNet_V3_Small_Weights)
             self.mobilenet.classifier = torch.nn.Identity()
@@ -629,7 +630,7 @@ class ModelFrames(nn.Module):
         #SS MODEL LAYERS
         
         #Convolutions (reduce dimensionality)
-        #self.conv1V = nn.Conv1d(576, d, 1, stride=1, bias=False)
+
         self.conv1A = nn.Conv1d(128, d, 1, stride=1, bias=False)
         self.norm1V = nn.LayerNorm([chunk_size * 25 // self.framestride, d])
         self.norm1A = nn.LayerNorm([self.chunk_size * self.framerate, d])
@@ -842,9 +843,15 @@ class ModelFrames(nn.Module):
         #FC AND SIGMOID TO MAKE PREDICTIONS        
         outputs = self.sigm(self.fc2(self.relu(self.fc1(embeddings))))
         
+        
+        #In case there is no masking in one batch
         if realV.shape[0] == 0:
             realV = inputsV[1:2, 1:2, :]
             predsV = Vpreds[1:2, 1:2, :]
+            
+        if realA.shape[0] == 0:
+            realA = inputsA[1:2, 1:2, :]
+            predsA = Apreds[1:2, 1:2, :]
 
             
         return embeddingV, embeddingA, realV, predsV, realA, predsA, outputs
