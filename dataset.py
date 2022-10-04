@@ -22,7 +22,7 @@ from joblib import Parallel, delayed
 
 
 def read_images(image_paths_list):
-    images = Parallel(n_jobs=4, verbose=5)(
+    images = Parallel(n_jobs=24, verbose=5)(
         delayed(cv2.imread)(f) for f in image_paths_list
     )
     return images
