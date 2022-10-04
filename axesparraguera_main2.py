@@ -107,7 +107,7 @@ def main(args):
         trainerSS(train_loader, 
                   model, optimizer, criterionVA, criterionMask,
                   model_name=args.model_name,
-                  max_epochs=40,
+                  max_epochs=args.max_epochsSS,
                   momentum=.99)
         
         criterion = NLLLoss_weights()
