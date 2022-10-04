@@ -715,6 +715,12 @@ class OnlineSoccerNetFrames(Dataset):
                 for i in range(feat_half1A.shape[0]):
                     np.save(path + '/half1_chunk' + str(i) + '_featuresA.npy', feat_half1A[i, :, :])
                     np.save(path + '/half1_chunk' + str(i) + '_labels.npy', label_half1[i, :])
+                    
+                    if frames1 < ((i * 25 * stride) // 4 * 4 ):
+                        print('----------')
+                        print(i)
+                        print((i * 25 * stride) // 4 * 4 )
+                        print(frames1)
                     self.path_list.append(path + '/half1_chunk' + str(i) + '_')
                     self.initial_frames.append((i * 25 * stride) // 4 * 4 )
                     self.path_list2.append(os.path.join(self.path_frames, game, 'half1', 'frame ' ))
@@ -726,7 +732,7 @@ class OnlineSoccerNetFrames(Dataset):
                     np.save(path + '/half2_chunk' + str(i) + '_featuresA.npy', feat_half2A[i, :, :])
                     np.save(path + '/half2_chunk' + str(i) + '_labels.npy', label_half2[i, :])
                     self.path_list.append(path + '/half2_chunk' + str(i) + '_')
-                    self.initial_frames.append(i * 25 * stride // 4 * 4)
+                    self.initial_frames.append((i * 25 * stride) // 4 * 4)
                     self.path_list2.append(os.path.join(self.path_frames, game, 'half2', 'frame ' ))
     
                         
@@ -778,3 +784,10 @@ class OnlineSoccerNetFrames(Dataset):
 
         return(len(self.path_list))
     
+
+OnlineSoccerNetFrames(path_frames = '/data-local/data1-hdd/axesparraguera/SoccerNetFrames', 
+             path_audio = '/data-local/data3-ssd/axesparraguera',  
+             path_labels = "/data-net/datasets/SoccerNetv2/ResNET_TF2",
+             path_store = '/data-local/data1-hdd/axesparraguera/SoccerNetFrames/trial',
+             features_audio = 'audio_embeddings_2fps.npy', 
+             split=["train"], framerate=2, chunk_size=4, framestride = 4, store = True)
