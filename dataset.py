@@ -767,7 +767,10 @@ class OnlineSoccerNetFrames(Dataset):
         initial_frame = self.initial_frames[index]
         frames = []
         for i in range(self.frames_clip):
-            frames.append(io.imread(os.path.join(path2 + str(initial_frame + i * 4) + '.jpg')))
+            try:
+                frames.append(io.imread(os.path.join(path2 + str(initial_frame + i * 4) + '.jpg')))
+            except:
+                frames.append(io.imread(os.path.join(path2 + str(initial_frame) + '.jpg')))
         return torch.from_numpy(np.array(frames)), torch.from_numpy(np.load(path + 'featuresA.npy')), np.load(path + 'labels.npy')
 
 
@@ -775,9 +778,3 @@ class OnlineSoccerNetFrames(Dataset):
 
         return(len(self.path_list))
     
-OnlineSoccerNetFrames(path_frames = '/data-local/data1-hdd/axesparraguera/SoccerNetFrames', 
-             path_audio = '/data-local/data3-ssd/axesparraguera',  
-             path_labels = "/data-net/datasets/SoccerNetv2/ResNET_TF2",
-             path_store = '/data-local/data1-hdd/axesparraguera/SoccerNetFrames/trial',
-             features_audio = 'audio_embeddings_2fps.npy', 
-             split=["train"], framerate=2, chunk_size=4, framestride = 4, store = True)
