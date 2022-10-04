@@ -13,12 +13,12 @@ from torchvision.models import swin_t, Swin_T_Weights
 
 model = swin_t()
 transform = T.Resize((224,224))
-model.heads = torch.nn.Identity()
+model.head = torch.nn.Identity()
 #model.classifier = torch.nn.Identity()
 print(model)
 
 image = torch.randn([31, 3, 224, 398])
-images = transform(image)
+#images = transform(image)
 
 print(images.shape)
 #image = image.view(-1, 3, 224, 398)
