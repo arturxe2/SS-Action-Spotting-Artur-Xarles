@@ -13,12 +13,14 @@ import copy
 from torchvision.models import mobilenet_v3_small, MobileNet_V3_Small_Weights, swin_t, Swin_T_Weights
 import torchvision.transforms as T
 
-
-def mask_tokens(features, mask_token, p_mask = 0.20):
+'''
+def mask_tokens(features, mask_token, p_mask = 0.20, consecutive_tokens = False, n_consecutive = 5):
     n_B, n_T, d = features.shape
     
     R = torch.rand([n_B, n_T])
     random_token = features[torch.randint(0, n_B, (1,)), torch.randint(0, n_T, (1,)), :]
+    
+      
     M1 = R < (p_mask * 0.8)
     M2 = (R >= (p_mask * 0.8)) & (R < (p_mask * 0.9))
     M3 = (R >= (p_mask * 0.9)) & (R < p_mask)
@@ -29,7 +31,47 @@ def mask_tokens(features, mask_token, p_mask = 0.20):
     M = (M1 | M2) | M3
     
     return features, M
+'''
 
+class mask_tokens(nn.Module):
+    
+    def __init__(self, mask_token, p_mask = 0.20, consecutive_tokens = False, n_consecutive = 5):
+        super().__init__()
+        self.mask_token = mask_token
+        self.p_mask = p_mask
+        self.consecutive_tokens = consecutive_tokens
+        self.n_consecutive = n_consecutive
+        
+        if self.consecutive_tokens:
+            self.maxpool = torch.nn.MaxPool1d(n_consecutive, stride=1, padding=n_consecutive/2)
+            #Aprox
+            self.aux_p_mask = self.p_mask / self.n_consecutive
+            
+    def forward(self, features: torch.Tensor):
+        n_B, n_T, d = features.shape
+        
+        R = torch.rand([n_B, n_T])
+        random_token = features[torch.randint(0, n_B, (1,)), torch.randint(0, n_T, (1,)), :]
+        
+        if self.consecutive_tokens:
+            R = self.maxpool(R)
+            M1 = R >= 1 - self.aux_p_mask * 0.8
+            M2 = (R < (1 - self.aux_p_mask * 0.8)) & (R >= 1 - self.aux_p_mask * 0.9)
+            M3 = (R < 1 - self.aux_p_mask * 0.9) & (R >= 1 - self.aux_p_mask)
+        
+        else:  
+            M1 = R < (self.p_mask * 0.8)
+            M2 = (R >= (self.p_mask * 0.8)) & (R < (self.p_mask * 0.9))
+            M3 = (R >= (self.p_mask * 0.9)) & (R < self.p_mask)
+        
+        features[M1] = self.mask_token
+        features[M2] = random_token
+        
+        M = (M1 | M2) | M3
+        
+        return features, M
+    
+    
 #Positional Encoding class
 class PositionalEncoding(nn.Module):
 
@@ -641,6 +683,8 @@ class ModelFrames(nn.Module):
         #Masked tokens
         self.mask_tokenV = nn.Parameter(torch.randn(d))
         self.mask_tokenA = nn.Parameter(torch.randn(d))
+        self.maskingV = mask_tokens(self.mask_tokenV, p_mask=0.2, consecutive_tokens=True)
+        self.maskingA = mask_tokens(self.mask_tokenA, p_mask=0.2, consecutive_tokens=True)
         
         #Transformer Encoders
         encoder_layerV = nn.TransformerEncoderLayer(d_model = d, nhead = 8, batch_first=True)
@@ -756,8 +800,8 @@ class ModelFrames(nn.Module):
         
         #GET MASKING OF FEATURES
         if not inference:
-            inputsVmask, MV = mask_tokens(inputsVmask, self.mask_tokenV, self.p_mask) #(B x chunk_size*framerate x d)
-            inputsAmask, MA = mask_tokens(inputsAmask, self.mask_tokenA, self.p_mask) #(B x chunk_size*framerate x d)
+            inputsVmask, MV = self.maskingV(inputsVmask) #(B x chunk_size*framerate x d)
+            inputsAmask, MA = self.maskingA(inputsAmask) #(B x chunk_size*framerate x d)
             
         else:
             MV = torch.rand([inputsVmask.shape[0], inputsVmask.shape[1]]) < 0.05
