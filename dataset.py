@@ -623,25 +623,25 @@ class OnlineSoccerNetFrames(Dataset):
                 print(feat_half1A.shape)
                 print(feat_half2A.shape)
                 #Visual frames bigger than audio features
-                if math.ceil(frames1 % 25) * 2 > feat_half1A.shape[0]:
-                    feat_half1A_aux = np.zeros((math.ceil(frames1 % 25) * 2, feat_half1A.shape[1]))
+                if math.ceil(frames1 // 25) * 2 > feat_half1A.shape[0]:
+                    feat_half1A_aux = np.zeros((math.ceil(frames1 // 25) * 2, feat_half1A.shape[1]))
                     feat_half1A_aux[:feat_half1A.shape[0]] = feat_half1A
                     feat_half1A_aux[feat_half1A.shape[0]:] = feat_half1A[feat_half1A.shape[0]-1]
                     feat_half1A = feat_half1A_aux
                     
-                if math.ceil(frames2 % 25) * 2 > feat_half2A.shape[0]:
-                    feat_half2A_aux = np.zeros((math.ceil(frames2 % 25) * 2, feat_half2A.shape[1]))
+                if math.ceil(frames2 // 25) * 2 > feat_half2A.shape[0]:
+                    feat_half2A_aux = np.zeros((math.ceil(frames2 // 25) * 2, feat_half2A.shape[1]))
                     feat_half2A_aux[:feat_half2A.shape[0]] = feat_half2A
                     feat_half2A_aux[feat_half2A.shape[0]:] = feat_half2A[feat_half2A.shape[0]-1]
                     feat_half2A = feat_half2A_aux
                 
                 #More audio than frames
-                if math.ceil(frames1 % 25) * 2 < feat_half1A.shape[0]:
-                    feat_half1A = feat_half1A[0:math.ceil(frames1 % 25) * 2, :]
+                if math.ceil(frames1 // 25) * 2 < feat_half1A.shape[0]:
+                    feat_half1A = feat_half1A[0:math.ceil(frames1 // 25) * 2, :]
                 
                 
-                if math.ceil(frames2 % 25) * 2 < feat_half2A.shape[0]:
-                    feat_half2A = feat_half2A[0:math.ceil(frames2 % 25) * 2, :]
+                if math.ceil(frames2 // 25) * 2 < feat_half2A.shape[0]:
+                    feat_half2A = feat_half2A[0:math.ceil(frames2 // 25) * 2, :]
     
                 print(feat_half1A.shape)
                 print(feat_half2A.shape)    
