@@ -16,6 +16,7 @@ import json
 import pickle
 import skimage.io as io
 import math
+import cv2
 
 
 #Function to extract features of a clip
@@ -765,13 +766,11 @@ class OnlineSoccerNetFrames(Dataset):
         path = self.path_list[index]
         path2 = self.path_list2[index]
         initial_frame = self.initial_frames[index]
-        frames = []
+        frames = np.empty((self.frames_clip, 224, 398, 3))
         for i in range(self.frames_clip):
-            try:
-                frames.append(io.imread(os.path.join(path2 + str(initial_frame + i * 4) + '.jpg')))
-            except:
-                frames.append(io.imread(os.path.join(path2 + str(initial_frame) + '.jpg')))
-        return torch.from_numpy(np.array(frames)), torch.from_numpy(np.load(path + 'featuresA.npy')), np.load(path + 'labels.npy')
+            frames[i, :, :, :] = cv2.imread(os.path.join(path2 + str(initial_frame + i * 4) + '.jpg'))
+
+        return torch.from_numpy(frames), torch.from_numpy(np.load(path + 'featuresA.npy')), np.load(path + 'labels.npy')
 
 
     def __len__(self):
