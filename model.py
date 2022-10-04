@@ -846,12 +846,12 @@ class ModelFrames(nn.Module):
         
         #In case there is no masking in one batch
         if realV.shape[0] == 0:
-            realV = inputsV[1:3, 1:3, :]
-            predsV = Vpreds[1:3, 1:3, :]
+            realV = inputsV[1:3, 0, :]
+            predsV = Vpreds[1:3, 0, :]
             
         if realA.shape[0] == 0:
-            realA = inputsA[1:3, 1:3, :]
-            predsA = Apreds[1:3, 1:3, :]
+            realA = inputsA[1:3, 0, :]
+            predsA = Apreds[1:3, 0, :]
 
             
         return embeddingV, embeddingA, realV, predsV, realA, predsA, outputs
