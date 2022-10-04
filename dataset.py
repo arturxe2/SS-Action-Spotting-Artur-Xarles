@@ -591,7 +591,7 @@ class OnlineSoccerNetFrames(Dataset):
                 z += 1
                 if z == 130:
                     break
-                if 'valid' in split & z >=17:
+                if ('valid' in split) & (z >=17):
                     break
                 
                 feat_half1A = np.load(os.path.join(path_audio, game, "1_" + features_audio))
