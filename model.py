@@ -43,7 +43,7 @@ class mask_tokens(nn.Module):
         self.n_consecutive = n_consecutive
         
         if self.consecutive_tokens:
-            self.maxpool = torch.nn.MaxPool1d(n_consecutive, stride=1, padding=n_consecutive/2)
+            self.maxpool = torch.nn.MaxPool1d(n_consecutive, stride=1, padding=n_consecutive//2)
             #Aprox
             self.aux_p_mask = self.p_mask / self.n_consecutive
             
