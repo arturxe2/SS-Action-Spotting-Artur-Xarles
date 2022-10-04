@@ -10,7 +10,8 @@ import torch
 import torch.nn as nn
 import numpy as np
 import copy
-from torchvision.models import mobilenet_v3_small, MobileNet_V3_Small_Weights
+from torchvision.models import mobilenet_v3_small, MobileNet_V3_Small_Weights, vit_b_16, ViT_B_16_Weights
+import torchvision.transforms as T
 
 
 def mask_tokens(features, mask_token, p_mask = 0.20):
@@ -594,7 +595,8 @@ class ModelAS(nn.Module):
     
 #Model class
 class ModelFrames(nn.Module):
-    def __init__(self, weights=None, num_classes = 17, d=512, chunk_size=5, framerate=2, p_mask = 0.15, framestride = 4, model="SSModel"):
+    def __init__(self, weights=None, num_classes = 17, d=512, chunk_size=5, framerate=2, p_mask = 0.15, 
+                 framestride = 4, model="SSModel", backbone = 'mobilenet'):
         """
         INPUT: two Tensors of shape (batch_size,chunk_size*framerate,feature_size)
         OUTPUTS: two Tensors of shape (batch_size,d)
@@ -611,15 +613,23 @@ class ModelFrames(nn.Module):
         self.p_mask = p_mask
         self.model = model
         self.framestride = framestride
+        self.backbone = backbone
         
-        self.mobilenet = mobilenet_v3_small(MobileNet_V3_Small_Weights)
-        self.mobilenet.classifier = torch.nn.Identity()
+        if backbone == 'mobilenet':
+            self.mobilenet = mobilenet_v3_small(MobileNet_V3_Small_Weights)
+            self.mobilenet.classifier = torch.nn.Identity()
+            self.conv1V = nn.Conv1d(576, d, 1, stride=1, bias=False)
+        elif backbone == 'vit':
+            self.vit = vit_b_16(ViT_B_16_Weights)
+            self.vit.heads = torch.nn.Identity()
+            self.conv1V = nn.Conv1d(768, d, 1, stride=1, bias=False)
+            self.transform = T.Resize((224,224))
         
         
         #SS MODEL LAYERS
         
         #Convolutions (reduce dimensionality)
-        self.conv1V = nn.Conv1d(576, d, 1, stride=1, bias=False)
+        #self.conv1V = nn.Conv1d(576, d, 1, stride=1, bias=False)
         self.conv1A = nn.Conv1d(128, d, 1, stride=1, bias=False)
         self.norm1V = nn.LayerNorm([chunk_size * 25 // self.framestride, d])
         self.norm1A = nn.LayerNorm([self.chunk_size * self.framerate, d])
@@ -719,7 +729,12 @@ class ModelFrames(nn.Module):
         inputsV = inputsV.view(-1, images_shape[2], images_shape[3], images_shape[4]) #(n x H x W x C)
         
         #BACKBONE
-        inputsV = self.mobilenet(inputsV) #(n x 576)
+        if self.backbone == 'mobilenet':
+            inputsV = self.mobilenet(inputsV) #(n x 576)
+        elif self.backbone == 'vit':
+            inputsV = self.transform(inputsV)
+            inputsV = self.vit(inputsV)
+            
         inputsV = inputsV.view(images_shape[0], images_shape[1], -1) #(B x n_frames x n_features(576))
         
         #PERMUTATION
