@@ -9,9 +9,9 @@ import torch
 import torchvision
 import torchvision.transforms as T
 
-from torchvision.models import swin_t, Swin_T_Weights
+from torchvision.models import swin_s, Swin_S_Weights
 
-model = swin_t(weights = Swin_T_Weights)
+model = swin_s(weights = Swin_S_Weights)
 
 transform = T.Resize((224,224))
 model.head = torch.nn.Identity()
