@@ -618,7 +618,10 @@ class OnlineSoccerNetFrames(Dataset):
                     
     
                 #Check same size Visual and Audio features
-                
+                print(frames1)
+                print(frames2)
+                print(feat_half1A.shape)
+                print(feat_half2A.shape)
                 #Visual frames bigger than audio features
                 if math.ceil(frames1 % 25) * 2 > feat_half1A.shape[0]:
                     feat_half1A_aux = np.zeros((math.ceil(frames1 % 25) * 2, feat_half1A.shape[1]))
@@ -640,7 +643,8 @@ class OnlineSoccerNetFrames(Dataset):
                 if math.ceil(frames2 % 25) * 2 < feat_half2A.shape[0]:
                     feat_half2A = feat_half2A[0:math.ceil(frames2 % 25) * 2, :]
     
-                    
+                print(feat_half1A.shape)
+                print(feat_half2A.shape)    
                 #Generate clips from features
                 feat_half1A = feats2clip(torch.from_numpy(feat_half1A), stride=stride, clip_length=self.chunk_size*self.framerate)  
                 feat_half2A = feats2clip(torch.from_numpy(feat_half2A), stride=stride, clip_length=self.chunk_size*self.framerate) 
@@ -776,3 +780,9 @@ class OnlineSoccerNetFrames(Dataset):
 
         return(len(self.path_list))
     
+OnlineSoccerNetFrames(path_frames = '/data-local/data1-hdd/axesparraguera/SoccerNetFrames', 
+             path_audio = '/data-local/data3-ssd/axesparraguera',  
+             path_labels = "/data-net/datasets/SoccerNetv2/ResNET_TF2",
+             path_store = '/data-local/data1-hdd/axesparraguera/SoccerNetFrames/trial',
+             features_audio = 'audio_embeddings_2fps.npy', 
+             split=["train"], framerate=2, chunk_size=4, framestride = 4, store = True)
