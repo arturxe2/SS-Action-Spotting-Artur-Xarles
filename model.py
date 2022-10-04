@@ -620,7 +620,7 @@ class ModelFrames(nn.Module):
             self.mobilenet.classifier = torch.nn.Identity()
             self.conv1V = nn.Conv1d(576, d, 1, stride=1, bias=False)
         elif backbone == 'vit':
-            self.vit = swin_t(Swin_T_Weights.DEFAULT)
+            self.vit = swin_t(weights = Swin_T_Weights.DEFAULT)
             self.vit.heads = torch.nn.Identity()
             self.conv1V = nn.Conv1d(768, d, 1, stride=1, bias=False)
             self.transform = T.Resize((224,224))
