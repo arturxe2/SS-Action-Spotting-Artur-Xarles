@@ -8,7 +8,7 @@ Created on Mon Oct  3 13:16:20 2022
 import torch
 import torchvision
 import torchvision.transforms as T
-from vit_pytorch import ViT, SimpleViT
+from vit_pytorch import ViT, SimpleViT, CrossFormer, SepViT
 
 from torchvision.models import swin_t, Swin_S_Weights
 
@@ -49,11 +49,33 @@ v = SimpleViT(
 
 print('Simple ViT:' + str(mem(v)))
 
+model = CrossFormer(
+    num_classes = 1000,                # number of output classes
+    dim = (64, 128, 256, 512),         # dimension at each stage
+    depth = (2, 2, 8, 2),              # depth of transformer at each stage
+    global_window_size = (8, 4, 2, 1), # global window sizes at each stage
+    local_window_size = 7,             # local window size (can be customized for each stage, but in paper, held constant at 7 for all stages)
+)
+
+
+print('CrossFormer:' + str(mem(model)))
 
 transform = T.Resize((224,224))
 model.head = torch.nn.Identity()
 #model.classifier = torch.nn.Identity()
 print(model)
+
+v = SepViT(
+    num_classes = 1000,
+    dim = 32,               # dimensions of first stage, which doubles every stage (32, 64, 128, 256) for SepViT-Lite
+    dim_head = 32,          # attention head dimension
+    heads = (1, 2, 4, 8),   # number of heads per stage
+    depth = (1, 2, 6, 2),   # number of transformer blocks per stage
+    window_size = 7,        # window size of DSS Attention block
+    dropout = 0.1           # dropout
+)
+
+print('SepViT:' + str(mem(v)))
 
 image = torch.randn([31, 3, 224, 398])
 #images = transform(image)

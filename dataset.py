@@ -592,7 +592,7 @@ class OnlineSoccerNetFrames(Dataset):
             z = 0
             for game in tqdm(self.listGames):
                 z += 1
-                if z == 150:
+                if z == 2:
                     break
                 if ('valid' in split) & (z >=21):
                     break
@@ -763,17 +763,14 @@ class OnlineSoccerNetFrames(Dataset):
             clip_labels (np.array): clip of labels for the segmentation.
             clip_targets (np.array): clip of targets for the spotting.
         """
-        time0 = time.time()
         path = self.path_list[index]
-        time1 = time.time()
         frames_path = self.frames_path[index]
-        time2 = time.time()
-        #frames = read_images(frames_path)
         frames = np.array([cv2.imread(path) for path in frames_path])
-        time3 = time.time()
+        time0 = time.time()
+        torch.from_numpy(frames)
+        time1 = time.time()
         print(time1-time0)
-        print(time2-time1)
-        print(time3-time2)
+
 
         return torch.from_numpy(frames), torch.from_numpy(np.load(path + 'featuresA.npy')), np.load(path + 'labels.npy')
 
@@ -790,5 +787,3 @@ a = OnlineSoccerNetFrames(path_frames = '/data-local/data1-hdd/axesparraguera/So
              split=["train"], framerate=2, chunk_size=4, framestride = 4, store = True)
 
 a.__getitem__(1)
-a.__getitem__(10000)
-a.__getitem__(a.__len__() - 1)
