@@ -68,12 +68,7 @@ def main(args):
     model = ModelFrames(weights=args.load_weights, d=args.hidden_d, 
         chunk_size=args.chunk_size, framerate=args.framerate, p_mask=args.p_mask, 
         model=args.model, backbone = 'mobilenet').cuda()
-    
-    mem_params = sum([param.nelement()*param.element_size() for param in model.parameters()])
-    mem_bufs = sum([buf.nelement()*buf.element_size() for buf in model.buffers()])
-    mem = mem_params + mem_bufs
-    print(mem / 1000000000)
-    
+       
     logging.info(model)
     total_params = sum(p.numel()
                        for p in model.parameters() if p.requires_grad)
