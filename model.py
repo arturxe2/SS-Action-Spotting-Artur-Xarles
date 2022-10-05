@@ -672,7 +672,7 @@ class ModelFrames(nn.Module):
             )
             #self.vit.head = torch.nn.Identity()
             self.conv1V = nn.Conv1d(512, d, 1, stride=1, bias=False)
-            self.transform = T.Resize((224,224))
+            self.transform = T.Resize((256,512))
         
         
         #SS MODEL LAYERS
