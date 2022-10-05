@@ -8,10 +8,17 @@ Created on Mon Oct  3 13:16:20 2022
 import torch
 import torchvision
 import torchvision.transforms as T
+from vit_pytorch import ViT
 
 from torchvision.models import swin_s, Swin_S_Weights
 
-model = swin_s(weights = Swin_S_Weights.DEFAULT)
+model = ViT()
+
+mem_params = sum([param.nelement()*param.element_size() for param in model.parameters()])
+mem_bufs = sum([buf.nelement()*buf.element_size() for buf in model.buffers()])
+mem = mem_params + mem_bufs
+
+print(mem)
 
 transform = T.Resize((224,224))
 model.head = torch.nn.Identity()
