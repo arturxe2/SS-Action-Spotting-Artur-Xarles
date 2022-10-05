@@ -63,7 +63,7 @@ model = CrossFormer(
 
 print('CrossFormer:' + str(mem(model)))
 
-transform = T.Resize((256,256))
+transform = T.Resize((256,512))
 model.head = torch.nn.Identity()
 #model.classifier = torch.nn.Identity()
 #print(model)
@@ -81,7 +81,7 @@ v = SepViT(
 print('SepViT:' + str(mem(v)))
 
 mbvit_xs = MobileViT(
-    image_size = (256, 256),
+    image_size = (256, 512),
     dims = [96, 120, 144],
     channels = [16, 32, 48, 48, 64, 64, 80, 80, 96, 96, 384],
     num_classes = 1000
