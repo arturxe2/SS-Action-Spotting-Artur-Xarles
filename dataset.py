@@ -592,7 +592,7 @@ class OnlineSoccerNetFrames(Dataset):
             z = 0
             for game in tqdm(self.listGames):
                 z += 1
-                if z == 150:
+                if z == 2:
                     break
                 if ('valid' in split) & (z >=21):
                     break
