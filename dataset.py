@@ -791,3 +791,4 @@ a = OnlineSoccerNetFrames(path_frames = '/data-local/data1-hdd/axesparraguera/So
 
 a.__getitem__(1)
 a.__getitem__(10000)
+a.__getitem__(a.__len__() - 1)
