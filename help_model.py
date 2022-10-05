@@ -8,7 +8,9 @@ Created on Mon Oct  3 13:16:20 2022
 import torch
 import torchvision
 import torchvision.transforms as T
-from vit_pytorch import ViT, SimpleViT, CrossFormer, SepViT
+from vit_pytorch import ViT, SimpleViT
+from vit_pytorch.crossformer import CrossFormer
+from vit_pytorch.sep_vit import SepViT
 
 from torchvision.models import swin_t, Swin_S_Weights
 
