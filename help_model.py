@@ -90,7 +90,7 @@ mbvit_xs = MobileViT(
 print('MobileViT:' + str(mem(mbvit_xs)))
 
 image = torch.randn([31, 3, 224, 398])
-#images = transform(image)
+images = transform(image)
 
 #print(image.shape)
 #image = image.view(-1, 3, 224, 398)
