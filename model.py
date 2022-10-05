@@ -72,6 +72,44 @@ class mask_tokens(nn.Module):
         
         return features, M
     
+class mask_frames(nn.Module):
+    
+    def __init__(self, mask_token, p_mask = 0.20, consecutive_tokens = True, n_consecutive = [5, 100, 100]):
+        super().__init__()
+        self.mask_token = mask_token
+        self.p_mask = p_mask
+        self.consecutive_tokens = consecutive_tokens
+        self.n_consecutive = n_consecutive
+        
+        if self.consecutive_tokens:
+            self.maxpool = torch.nn.MaxPool3d(n_consecutive, stride=1, padding=[n // 2 for n in n_consecutive])
+            #Aprox
+            self.aux_p_mask = self.p_mask / np.prod(self.n_consecutive)
+            
+    def forward(self, frames: torch.Tensor):
+        n_B, n_T, H, W, C = frames.shape
+        
+        R = torch.rand([n_B, n_T, H, W])
+        random_token = frames[torch.randint(0, n_B, (1,)), torch.randint(0, n_T, (1,)), torch.randint(0, H, (1,)), torch.randint(0, W, (1,)), :]
+        
+        if self.consecutive_tokens:
+            R = self.maxpool(R)
+            M1 = R >= 1 - self.aux_p_mask * 0.8
+            M2 = (R < (1 - self.aux_p_mask * 0.8)) & (R >= 1 - self.aux_p_mask * 0.9)
+            M3 = (R < 1 - self.aux_p_mask * 0.9) & (R >= 1 - self.aux_p_mask)
+        
+        else:  
+            M1 = R < (self.p_mask * 0.8)
+            M2 = (R >= (self.p_mask * 0.8)) & (R < (self.p_mask * 0.9))
+            M3 = (R >= (self.p_mask * 0.9)) & (R < self.p_mask)
+        
+        frames[M1] = self.mask_token
+        frames[M2] = random_token
+        
+        M = (M1 | M2) | M3
+        M = torch.max(M.view(n_B, n_T, -1), dim=2).values    
+        return frames, M
+    
     
 #Positional Encoding class
 class PositionalEncoding(nn.Module):
@@ -639,7 +677,7 @@ class ModelAS(nn.Module):
 #Model class
 class ModelFrames(nn.Module):
     def __init__(self, weights=None, num_classes = 17, d=512, chunk_size=5, framerate=2, p_mask = 0.15, 
-                 framestride = 4, model="SSModel", backbone = 'mobilenet'):
+                 framestride = 4, model="SSModel", backbone = 'mobilenet', masking = 'token'):
         """
         INPUT: two Tensors of shape (batch_size,chunk_size*framerate,feature_size)
         OUTPUTS: two Tensors of shape (batch_size,d)
@@ -687,10 +725,15 @@ class ModelFrames(nn.Module):
         self.norm3 = nn.LayerNorm([chunk_size * 25 // self.framestride + (self.chunk_size * self.framerate), d])
         
         #Masked tokens
-        self.mask_tokenV = nn.Parameter(torch.randn(d))
         self.mask_tokenA = nn.Parameter(torch.randn(d))
-        self.maskingV = mask_tokens(self.mask_tokenV, p_mask=0.2, consecutive_tokens=True)
         self.maskingA = mask_tokens(self.mask_tokenA, p_mask=0.2, consecutive_tokens=True)
+        if masking == 'token':
+            self.mask_tokenV = nn.Parameter(torch.randn(d))
+            self.maskingV = mask_tokens(self.mask_tokenV, p_mask=0.2, consecutive_tokens=True)
+            
+        elif masking == 'frame':
+            self.mask_tokenV = nn.Parameter(torch.randn(1))
+            self.maskingV = mask_frames(self.mask_tokenV, p_mask=0.2, consecutive_tokens=True)
         
         #Transformer Encoders
         encoder_layerV = nn.TransformerEncoderLayer(d_model = d, nhead = 8, batch_first=True)
