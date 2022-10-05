@@ -63,7 +63,7 @@ model = CrossFormer(
 
 print('CrossFormer:' + str(mem(model)))
 
-transform = T.Resize((224,512))
+transform = T.Resize((224,224))
 model.head = torch.nn.Identity()
 #model.classifier = torch.nn.Identity()
 #print(model)
