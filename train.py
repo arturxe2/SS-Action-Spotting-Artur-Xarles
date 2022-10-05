@@ -109,7 +109,6 @@ def trainSS(dataloader,
             # compute output
             classV, classA, Vreal, Vpreds, Areal, Apreds, outputs = model(featsV, featsA)
             
-            print('asdf')
             loss1 = criterionVA(classV, classA)
             loss2 = criterionVA(Vreal, Vpreds)
             loss3 = criterionVA(Areal, Apreds)

@@ -779,6 +779,7 @@ class ModelFrames(nn.Module):
         
         inputsV = inputsV.view(-1, images_shape[2], images_shape[3], images_shape[4]) #(n x H x W x C)
         
+        
         #BACKBONE
         if self.backbone == 'mobilenet':
             inputsV = self.mobilenet(inputsV) #(n x 576)
@@ -787,6 +788,8 @@ class ModelFrames(nn.Module):
             inputsV = self.vit(inputsV)
             
         inputsV = inputsV.view(images_shape[0], images_shape[1], -1) #(B x n_frames x n_features(576))
+        
+        del images_shape
         
         #PERMUTATION
         inputsV = inputsV.permute((0, 2, 1)) #(B x n_features x chunk_size*framerate)
@@ -828,12 +831,16 @@ class ModelFrames(nn.Module):
         #ADDING CLASS TOKEN
         clasV = torch.unsqueeze(self.clasV.repeat(inputsV.shape[0], 1), dim=1) #(B x 1 x d)
         inputsV = torch.cat((clasV, inputsV), dim=1) #(B x chunk_size*framerate + 1 x d)
+        del clasV
         clasVmask = torch.unsqueeze(self.clasVmask.repeat(inputsVmask.shape[0], 1), dim=1) #(B x 1 x d)
         inputsVmask = torch.cat((clasVmask, inputsVmask), dim=1) #(B x chunk_size*framerate + 1 x d)
+        del clasVmask
         clasA = torch.unsqueeze(self.clasA.repeat(inputsA.shape[0], 1), dim=1) #(B x 1 x d)
         inputsA = torch.cat((clasA, inputsA), dim=1) #(B x chunk_size*framerate + 1 x d)
+        del clasA
         clasAmask = torch.unsqueeze(self.clasAmask.repeat(inputsAmask.shape[0], 1), dim=1) #(B x 1 x d)
         inputsAmask = torch.cat((clasAmask, inputsAmask), dim=1) #(B x chunk_size*framerate + 1 x d)
+        del clasAmask
         
         #TRANSFORMER ENCODER
         inputsV = self.encoderV(inputsV) #(B x chunk_size * framerate +1 x d)
@@ -859,14 +866,9 @@ class ModelFrames(nn.Module):
         inputsVmask = inputsVmask[:, 1:, :]
         inputsAmask = inputsAmask[:, 1:, :]
         
-        #PERMUTATION
-        aux_inputsVmask = inputsVmask.permute((0, 2, 1)) #(B x d x chunk_size*framerate +1)
-        aux_inputsAmask = inputsAmask.permute((0, 2, 1)) #(B x d x chunk_size*framerate +1)
-        
-        
         #PREDICTION OF MASK TOKENS
-        Vpreds = self.convMV2(self.relu(self.convMV1(aux_inputsVmask))).permute((0, 2, 1)) #(B x chunk_size * framerate x d)
-        Apreds = self.convMA2(self.relu(self.convMA1(aux_inputsAmask))).permute((0, 2, 1)) #(B x chunk_size * framerate x d)
+        Vpreds = self.convMV2(self.relu(self.convMV1(inputsVmask.permute((0, 2, 1))))).permute((0, 2, 1)) #(B x chunk_size * framerate x d)
+        Apreds = self.convMA2(self.relu(self.convMA1(inputsAmask.permute((0, 2, 1))))).permute((0, 2, 1)) #(B x chunk_size * framerate x d)
         
         #GET MASKED IDS
         realV = inputsV[MV] #(n_maskV x d)
@@ -874,8 +876,26 @@ class ModelFrames(nn.Module):
         predsV = Vpreds[MV] #(n_maskV x d)
         predsA = Apreds[MA] #(n_maskA x d)
         
+        #In case there is no masking in one batch
+        if realV.shape[0] == 0:
+            realV = inputsV[1:3, 0, :]
+            predsV = Vpreds[1:3, 0, :]
+            
+        if realA.shape[0] == 0:
+            realA = inputsA[1:3, 0, :]
+            predsA = Apreds[1:3, 0, :]
+        
+        del MV
+        del MA
+        del inputsV
+        del inputsA
+        
         #CONCATENATION OF VISUAL AND AUDIO EVOLVED FEATURES (MASK PART)
         embeddings = torch.cat((inputsVmask, inputsAmask), dim=1) #(B x 2*(chunk_size * framerate) x d)
+        
+        del inputsVmask
+        del inputsAmask
+        
         
         #MULTIMODAL TRANSFORMER ENCODER
         embeddings = self.encoderM(embeddings) #(B x 2*(chunk_size * framerate) x d)
@@ -893,15 +913,10 @@ class ModelFrames(nn.Module):
         #FC AND SIGMOID TO MAKE PREDICTIONS        
         outputs = self.sigm(self.fc2(self.relu(self.fc1(embeddings))))
         
+        del embeddings
         
-        #In case there is no masking in one batch
-        if realV.shape[0] == 0:
-            realV = inputsV[1:3, 0, :]
-            predsV = Vpreds[1:3, 0, :]
-            
-        if realA.shape[0] == 0:
-            realA = inputsA[1:3, 0, :]
-            predsA = Apreds[1:3, 0, :]
+        
+        
 
             
         return embeddingV, embeddingA, realV, predsV, realA, predsA, outputs
