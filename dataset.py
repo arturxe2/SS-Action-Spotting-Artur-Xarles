@@ -789,7 +789,7 @@ class OnlineSoccerNetFrames(Dataset):
 
         return(len(self.path_list))
     
- OnlineSoccerNetFrames(path_frames = '/data-local/data1-hdd/axesparraguera/SoccerNetFrames', 
+OnlineSoccerNetFrames(path_frames = '/data-local/data1-hdd/axesparraguera/SoccerNetFrames', 
              path_audio = '/data-local/data3-ssd/axesparraguera',  
              path_labels = "/data-net/datasets/SoccerNetv2/ResNET_TF2",
              path_store = '/data-local/data1-hdd/axesparraguera/SoccerNetFrames/trial',
