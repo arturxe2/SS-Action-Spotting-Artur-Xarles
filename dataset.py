@@ -763,14 +763,18 @@ class OnlineSoccerNetFrames(Dataset):
             clip_labels (np.array): clip of labels for the segmentation.
             clip_targets (np.array): clip of targets for the spotting.
         """
-        
+        time0 = time.time()
         path = self.path_list[index]
+        time1 = time.time()
         frames_path = self.frames_path[index]
+        time2 = time.time()
         #frames = read_images(frames_path)
         frames = np.array([cv2.imread(path) for path in frames_path])
+        time3 = time.time()
+        print(time1-time0)
+        print(time2-time1)
+        print(time3-time2)
 
-
-        
         return torch.from_numpy(frames), torch.from_numpy(np.load(path + 'featuresA.npy')), np.load(path + 'labels.npy')
 
 
