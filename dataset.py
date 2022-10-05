@@ -770,7 +770,7 @@ class OnlineSoccerNetFrames(Dataset):
 
 
 
-        return torch.tensor(frames), torch.from_numpy(np.load(path + 'featuresA.npy')), np.load(path + 'labels.npy')
+        return torch.tensor(np.array(frames)), torch.from_numpy(np.load(path + 'featuresA.npy')), np.load(path + 'labels.npy')
 
 
     def __len__(self):
