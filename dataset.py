@@ -782,6 +782,7 @@ class OnlineSoccerNetFrames(Dataset):
         print(time1 - time0)
         print(time2 - time1)
         print(time3 - time2)
+        print(frames.shape)
         
         return torch.from_numpy(frames), torch.from_numpy(np.load(path + 'featuresA.npy')), np.load(path + 'labels.npy')
 
