@@ -12,6 +12,7 @@ from vit_pytorch import ViT, SimpleViT
 from vit_pytorch.crossformer import CrossFormer
 from vit_pytorch.sep_vit import SepViT
 from vit_pytorch.mobile_vit import MobileViT
+from torchvision.models import mobilenet_v3_small
 
 from torchvision.models import swin_t, Swin_S_Weights
 
@@ -84,12 +85,17 @@ mbvit_xs = MobileViT(
     image_size = (256, 512),
     dims = [96, 120, 144],
     channels = [16, 32, 48, 48, 64, 64, 80, 80, 96, 96, 384],
-    num_classes = 1000
+    num_classes = 512
 )
 
 print('MobileViT:' + str(mem(mbvit_xs)))
 
-print(mbvit_xs)
+
+model = mobilenet_v3_small()
+
+print('MobileNet: ' + str(mem(model)))
+
+#print(mbvit_xs)
 image = torch.randn([31, 3, 224, 398])
 images = transform(image)
 
