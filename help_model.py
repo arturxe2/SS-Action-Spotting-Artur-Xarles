@@ -94,5 +94,5 @@ images = transform(image)
 
 #print(image.shape)
 #image = image.view(-1, 3, 224, 398)
-output = mbvit_xs(image)
+output = mbvit_xs(images)
 #print(output.shape)
