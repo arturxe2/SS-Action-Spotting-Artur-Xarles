@@ -103,7 +103,6 @@ def trainSS(dataloader,
                 
             # measure data loading time
             data_time.update(time.time() - end)
-            print(featsV.element_size() * featsV.nelement())
             featsV = featsV.cuda()
             featsA = featsA.cuda()
             labels = labels.cuda()
