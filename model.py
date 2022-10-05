@@ -12,6 +12,7 @@ import numpy as np
 import copy
 from torchvision.models import mobilenet_v3_small, MobileNet_V3_Small_Weights, swin_t, Swin_T_Weights
 import torchvision.transforms as T
+from vit_pytorch.mobile_vit import MobileViT
 
 '''
 def mask_tokens(features, mask_token, p_mask = 0.20, consecutive_tokens = False, n_consecutive = 5):
@@ -663,9 +664,14 @@ class ModelFrames(nn.Module):
             self.mobilenet.classifier = torch.nn.Identity()
             self.conv1V = nn.Conv1d(576, d, 1, stride=1, bias=False)
         elif backbone == 'vit':
-            self.vit = swin_t(weights = Swin_T_Weights.DEFAULT)
-            self.vit.head = torch.nn.Identity()
-            self.conv1V = nn.Conv1d(768, d, 1, stride=1, bias=False)
+            self.vit = MobileViT(
+                image_size = (256, 512),
+                dims = [96, 120, 144],
+                channels = [16, 32, 48, 48, 64, 64, 80, 80, 96, 96, 384],
+                num_classes = 512
+            )
+            #self.vit.head = torch.nn.Identity()
+            self.conv1V = nn.Conv1d(512, d, 1, stride=1, bias=False)
             self.transform = T.Resize((224,224))
         
         
@@ -777,7 +783,7 @@ class ModelFrames(nn.Module):
         if self.backbone == 'mobilenet':
             inputsV = self.mobilenet(inputsV) #(n x 576)
         elif self.backbone == 'vit':
-            #inputsV = self.transform(inputsV)
+            inputsV = self.transform(inputsV)
             inputsV = self.vit(inputsV)
             
         inputsV = inputsV.view(images_shape[0], images_shape[1], -1) #(B x n_frames x n_features(576))
