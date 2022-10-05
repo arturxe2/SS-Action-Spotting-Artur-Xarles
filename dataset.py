@@ -776,7 +776,8 @@ class OnlineSoccerNetFrames(Dataset):
         time1 = time.time()
         frames_path = self.frames_path[index]
         time2 = time.time()
-        frames = read_images(frames_path)
+        #frames = read_images(frames_path)
+        frames = np.array([cv2.imread(path) for path in frames_path])
         time3 = time.time()
         print(time1 - time0)
         print(time2 - time1)
