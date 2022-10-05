@@ -765,25 +765,14 @@ class OnlineSoccerNetFrames(Dataset):
         """
         path = self.path_list[index]
         frames_path = self.frames_path[index]
-        frames = np.array([cv2.imread(path) for path in frames_path])
-        time0 = time.time()
-        torch.from_numpy(frames)
-        time1 = time.time()
-        print(time1-time0)
+        #Most time expensive
+        frames = [cv2.imread(path) for path in frames_path]
 
 
-        return torch.from_numpy(frames), torch.from_numpy(np.load(path + 'featuresA.npy')), np.load(path + 'labels.npy')
+
+        return torch.tensor(frames), torch.from_numpy(np.load(path + 'featuresA.npy')), np.load(path + 'labels.npy')
 
 
     def __len__(self):
 
         return(len(self.path_list))
-    
-a = OnlineSoccerNetFrames(path_frames = '/data-local/data1-hdd/axesparraguera/SoccerNetFrames', 
-             path_audio = '/data-local/data3-ssd/axesparraguera',  
-             path_labels = "/data-net/datasets/SoccerNetv2/ResNET_TF2",
-             path_store = '/data-local/data1-hdd/axesparraguera/SoccerNetFrames/trial',
-             features_audio = 'audio_embeddings_2fps.npy', 
-             split=["train"], framerate=2, chunk_size=4, framestride = 4, store = True)
-
-a.__getitem__(1)
