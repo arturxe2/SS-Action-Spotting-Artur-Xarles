@@ -726,7 +726,7 @@ class OnlineSoccerNetFrames(Dataset):
                     np.save(path + '/half1_chunk' + str(i) + '_featuresA.npy', feat_half1A[i, :, :])
                     np.save(path + '/half1_chunk' + str(i) + '_labels.npy', label_half1[i, :])
                     self.path_list.append(path + '/half1_chunk' + str(i) + '_')
-                    self.frames_path.append([os.path.join(self.path_frames, game, 'half1', 'frame ' + str((i * 25 * stride) // 4 * 4 + j * 4) + '.jpg') for j in range(self.frames_clip)])
+                    self.frames_path.append([os.path.join(self.path_frames, game, 'half1', 'frame ' + str(min(frames1, (i * 25 * stride) // 4 * 4 + j * 4)) + '.jpg') for j in range(self.frames_clip)])
                     #self.path_list2.append(os.path.join(self.path_frames, game, 'half1', 'frame ' ))
                                            
                 #STORE HALF 2 FILES
@@ -736,7 +736,7 @@ class OnlineSoccerNetFrames(Dataset):
                     np.save(path + '/half2_chunk' + str(i) + '_featuresA.npy', feat_half2A[i, :, :])
                     np.save(path + '/half2_chunk' + str(i) + '_labels.npy', label_half2[i, :])
                     self.path_list.append(path + '/half2_chunk' + str(i) + '_')
-                    self.frames_path.append([os.path.join(self.path_frames, game, 'half2', 'frame ' + str((i * 25 * stride) // 4 * 4 + j * 4) + '.jpg') for j in range(self.frames_clip)])
+                    self.frames_path.append([os.path.join(self.path_frames, game, 'half2', 'frame ' + str(min(frames2, (i * 25 * stride) // 4 * 4 + j * 4)) + '.jpg') for j in range(self.frames_clip)])
                     #self.path_list2.append(os.path.join(self.path_frames, game, 'half2', 'frame ' ))
     
                         
