@@ -22,13 +22,6 @@ import time
 
 
 
-def read_images(image_paths_list):
-    images = Parallel(n_jobs=4, verbose=0)(
-        delayed(cv2.imread)(f) for f in image_paths_list
-    )
-    return np.array(images)
-
-
 #Function to extract features of a clip
 def feats2clip(feats, stride, clip_length, padding = "replicate_last", off=0):
     if padding =="zeropad":
@@ -771,18 +764,12 @@ class OnlineSoccerNetFrames(Dataset):
             clip_targets (np.array): clip of targets for the spotting.
         """
         
-        time0 = time.time()
         path = self.path_list[index]
-        time1 = time.time()
         frames_path = self.frames_path[index]
-        time2 = time.time()
         #frames = read_images(frames_path)
         frames = np.array([cv2.imread(path) for path in frames_path])
-        time3 = time.time()
-        print(time1 - time0)
-        print(time2 - time1)
-        print(time3 - time2)
-        print(frames.shape)
+
+
         
         return torch.from_numpy(frames), torch.from_numpy(np.load(path + 'featuresA.npy')), np.load(path + 'labels.npy')
 
