@@ -67,7 +67,7 @@ def main(args):
     # create model
     model = ModelFrames(weights=args.load_weights, d=args.hidden_d, 
         chunk_size=args.chunk_size, framerate=args.framerate, p_mask=args.p_mask, 
-        model=args.model, backbone = 'vit', masking = 'frame').cuda()
+        model=args.model, backbone = 'vit', masking = 'token').cuda()
        
     logging.info(model)
     total_params = sum(p.numel()
@@ -109,7 +109,7 @@ def main(args):
                   model, optimizer, criterionVA, criterionMask,
                   model_name=args.model_name,
                   max_epochs=args.max_epochsSS,
-                  momentum=.99)
+                  momentum=.99, n_batches=16)
         
         criterion = NLLLoss_weights()
         optimizer = torch.optim.Adam(model.parameters(), lr=args.LRAS, 

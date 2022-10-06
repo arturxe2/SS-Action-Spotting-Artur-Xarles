@@ -25,7 +25,8 @@ def trainerSS(train_loader,
             criterionMask,
             model_name,
             max_epochs=1000,
-            momentum=0.999):
+            momentum=0.999,
+            n_batches=4):
 
     logging.info("start training self-supervised")
     training_stage = 0
@@ -42,7 +43,7 @@ def trainerSS(train_loader,
         loss_training, losses1, losses2, losses3 = trainSS(train_loader, model, 
                               criterionVA, criterionMask, 
                               optimizer, epoch + 1, momentum = momentum,
-                              train=True)
+                              train=True, n_batches = n_batches)
         losses_path.append([losses1, losses2, losses3])
         state = {
             'epoch': epoch + 1,
@@ -77,7 +78,8 @@ def trainSS(dataloader,
           optimizer,
           epoch,
           momentum = 0.999,
-          train=False):
+          train=False,
+          n_batches=4):
 
     batch_time = AverageMeter()
     data_time = AverageMeter()
@@ -109,9 +111,9 @@ def trainSS(dataloader,
             # compute output
             classV, classA, Vreal, Vpreds, Areal, Apreds, outputs = model(featsV, featsA)
             
-            loss1 = criterionVA(classV, classA)
-            loss2 = criterionVA(Vreal, Vpreds)
-            loss3 = criterionVA(Areal, Apreds)
+            loss1 = criterionVA(classV, classA) / n_batches
+            loss2 = criterionVA(Vreal, Vpreds) / n_batches
+            loss3 = criterionVA(Areal, Apreds) / n_batches
             loss = loss1 + loss2 + loss3# + criterionVA(classV, classA)
             #loss.requires_grad = True
             # measure accuracy and record loss
@@ -121,24 +123,24 @@ def trainSS(dataloader,
             losses3.update(loss3.item(), featsV.size(0))
         
             if train:
-                # compute gradient and do SGD step
-                optimizer.zero_grad()
+                # compute gradient
                 loss.backward()
                 
-                #torch.nn.utils.clip_grad_norm(model.parameters(), max_norm=5)
-                optimizer.step()
+                if ((i + 1) % n_batches == 0) or (i + 1 == len(dataloader)):
+                    optimizer.step()
+                    optimizer.zero_grad()
                 
-                #Momentum step
+                    #Momentum step
                 
-                for Vencoder, VencoderMask in zip(model.encoderV.parameters(), model.encoderVmask.parameters()):
-                    Vencoder.data.copy_(momentum * VencoderMask.data + (1-momentum) * Vencoder.data)
-                for Aencoder, AencoderMask in zip(model.encoderA.parameters(), model.encoderAmask.parameters()):
-                    Aencoder.data.copy_(momentum * AencoderMask.data + (1-momentum) * Aencoder.data)
+                    for Vencoder, VencoderMask in zip(model.encoderV.parameters(), model.encoderVmask.parameters()):
+                        Vencoder.data.copy_(momentum * VencoderMask.data + (1-momentum) * Vencoder.data)
+                    for Aencoder, AencoderMask in zip(model.encoderA.parameters(), model.encoderAmask.parameters()):
+                        Aencoder.data.copy_(momentum * AencoderMask.data + (1-momentum) * Aencoder.data)
                 
-                model.posV.data.copy_(momentum * model.posVmask.data + (1-momentum) * model.posV.data)
-                model.posA.data.copy_(momentum * model.posAmask.data + (1-momentum) * model.posA.data)
-                model.clasV.data.copy_(momentum * model.clasVmask.data + (1-momentum) * model.clasV.data)
-                model.clasA.data.copy_(momentum * model.clasAmask.data + (1-momentum) * model.clasA.data)
+                    model.posV.data.copy_(momentum * model.posVmask.data + (1-momentum) * model.posV.data)
+                    model.posA.data.copy_(momentum * model.posAmask.data + (1-momentum) * model.posA.data)
+                    model.clasV.data.copy_(momentum * model.clasVmask.data + (1-momentum) * model.clasV.data)
+                    model.clasA.data.copy_(momentum * model.clasAmask.data + (1-momentum) * model.clasA.data)
         
             # measure elapsed time
             batch_time.update(time.time() - end)
