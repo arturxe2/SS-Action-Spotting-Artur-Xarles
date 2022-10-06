@@ -124,7 +124,8 @@ def main(args):
                   model, optimizer, scheduler, criterion,
                   patience=args.patience,
                   model_name=args.model_name,
-                  max_epochs=args.max_epochsAS)
+                  max_epochs=args.max_epochsAS,
+                  n_batches=16)
 
 
     

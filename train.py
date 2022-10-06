@@ -126,7 +126,9 @@ def trainSS(dataloader,
                 # compute gradient
                 loss.backward()
                 
+                #Gradient accumulation (every x batches we update parameters)
                 if ((i + 1) % n_batches == 0) or (i + 1 == len(dataloader)):
+                    #Update parameters
                     optimizer.step()
                     optimizer.zero_grad()
                 
@@ -175,7 +177,8 @@ def trainerAS(train_loader,
             model_name,
             max_epochs=1000,
             evaluation_frequency=10,
-            freeze = True):
+            freeze = True,
+            n_batches = 4):
 
     logging.info("start training action spotting")
 
@@ -211,7 +214,7 @@ def trainerAS(train_loader,
         # evaluate on validation set
         loss_validation = trainAS(
             val_loader, model, criterion, optimizer, epoch + 1, 
-            train=False)
+            train=False, n_batches=4)
 
         state = {
             'epoch': epoch + 1,
@@ -262,7 +265,8 @@ def trainAS(dataloader,
           criterion,
           optimizer,
           epoch,
-          train=False):
+          train=False,
+          n_batches=4):
 
     batch_time = AverageMeter()
     data_time = AverageMeter()
@@ -291,17 +295,22 @@ def trainAS(dataloader,
             # compute output
             classV, classA, Vreal, Vpreds, Areal, Apreds, outputs = model(featsV, featsA, inference=True)
             
-            loss = criterion(labels, outputs)
+            loss = criterion(labels, outputs) / n_batches
         
             # measure accuracy and record loss
             losses.update(loss.item(), featsV.size(0) + featsA.size(0))
         
             if train:
-                # compute gradient and do SGD step
-                optimizer.zero_grad()
+                
+                # compute gradient
                 loss.backward()
-                #torch.nn.utils.clip_grad_norm(model.parameters(), max_norm=5)
-                optimizer.step()
+            
+                #Gradient accumulation (every x batches we update parameters)
+                if ((i + 1) % n_batches == 0) or (i + 1 == len(dataloader)):
+                    #Update parameters
+                    optimizer.step()
+                    optimizer.zero_grad()
+
         
             # measure elapsed time
             batch_time.update(time.time() - end)
