@@ -78,13 +78,15 @@ class mask_frames(nn.Module):
         super().__init__()
         self.mask_token = mask_token
         self.p_mask = p_mask
-        self.n_consecutive = [n // 2 for n in n_consecutive]
+        self.npixels = np.prod(n_consecutive)
+        self.n_consecutive = [n//2 for n in n_consecutive]
         self.n_generations = n_generations
 
         
             
     def forward(self, frames: torch.Tensor):
         n_B, n_T, H, W, C = frames.shape
+        tnpixels = n_B * n_T * H * W
         
         R1 = torch.zeros([n_B, n_T, H, W], dtype=torch.bool)
         R2 = torch.zeros([n_B, n_T, H, W], dtype=torch.bool)
@@ -97,28 +99,25 @@ class mask_frames(nn.Module):
         h = torch.randint(0, H, (self.n_generations, ))
         w = torch.randint(0, W, (self.n_generations, ))
         
-        n1 = n_B * n_T * H * W * self.p_mask * 0.8
-        n2 = n_B * n_T * H * W * self.p_mask * 0.1
-        n3 = n_B * n_T * H * W * self.p_mask * 0.1
+        n1 = int((tnpixels * self.p_mask * 0.8) // self.npixels)
+        n2 = int((tnpixels * self.p_mask * 0.1) // self.npixels)
         
         i = 0
-        while (R1.sum() < n1) & (i < self.n_generations):
+
+        for i in range(n1):
             R1[b[i], max(0, t[i]-self.n_consecutive[0]):min(t[i]+self.n_consecutive[0], n_T-1), 
               max(0, h[i]-self.n_consecutive[1]):min(h[i]+self.n_consecutive[1], H-1), 
               max(0, w[i]-self.n_consecutive[2]):min(w[i]+self.n_consecutive[2], W-1)] = True
-            i += 1
             
-        while (R2.sum() < n2) & (i < self.n_generations):
+        for i in range(n1, n1+n2):
             R2[b[i], max(0, t[i]-self.n_consecutive[0]):min(t[i]+self.n_consecutive[0], n_T-1), 
               max(0, h[i]-self.n_consecutive[1]):min(h[i]+self.n_consecutive[1], H-1), 
               max(0, w[i]-self.n_consecutive[2]):min(w[i]+self.n_consecutive[2], W-1)] = True
-            i += 1
-            
-        while (R3.sum() < n3) & (i < self.n_generations):
+
+        for i in range(n1+n2, n1+n2+n2):
             R3[b[i], max(0, t[i]-self.n_consecutive[0]):min(t[i]+self.n_consecutive[0], n_T-1), 
               max(0, h[i]-self.n_consecutive[1]):min(h[i]+self.n_consecutive[1], H-1), 
               max(0, w[i]-self.n_consecutive[2]):min(w[i]+self.n_consecutive[2], W-1)] = True
-            i += 1
             
         frames[R1] = self.mask_token
         frames[R2] = random_token
