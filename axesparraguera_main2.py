@@ -67,7 +67,7 @@ def main(args):
     # create model
     model = ModelFrames(weights=args.load_weights, d=args.hidden_d, 
         chunk_size=args.chunk_size, framerate=args.framerate, p_mask=args.p_mask, 
-        model=args.model, backbone = 'mobilenet', masking = 'token').cuda()
+        model=args.model, backbone = 'vit', masking = 'token').cuda()
        
     logging.info(model)
     total_params = sum(p.numel()
