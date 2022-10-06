@@ -592,9 +592,9 @@ class OnlineSoccerNetFrames(Dataset):
             z = 0
             for game in tqdm(self.listGames):
                 z += 1
-                if z == 2:
+                if z == 150:
                     break
-                if ('valid' in split) & (z >=21):
+                if ('valid' in split) & (z >=50):
                     break
                 
                 feat_half1A = np.load(os.path.join(path_audio, game, "1_" + features_audio))
