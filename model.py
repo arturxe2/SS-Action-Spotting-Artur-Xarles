@@ -74,7 +74,7 @@ class mask_tokens(nn.Module):
     
 class mask_frames(nn.Module):
     
-    def __init__(self, mask_token, p_mask = 0.20, consecutive_tokens = True, n_consecutive = [5, 100, 100]):
+    def __init__(self, mask_token, p_mask = 0.20, consecutive_tokens = True, n_consecutive = [5, 51, 51]):
         super().__init__()
         self.mask_token = mask_token
         self.p_mask = p_mask
