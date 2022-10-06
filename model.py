@@ -830,7 +830,7 @@ class ModelFrames(nn.Module):
                 inputsVmask = inputsVmask.permute((0, 1, 4, 2, 3)) #(B x n_frames x C x H x W)
                 inputsVmask = inputsVmask.view(-1, images_shape[4], images_shape[2], images_shape[3]) #(B*n_frames x C x H x W)
                 
-            inputsV.view(-1, images_shape[4], images_shape[2], images_shape[3]) #(B*n_frames x C x H x W)
+            inputsV = inputsV.view(-1, images_shape[4], images_shape[2], images_shape[3]) #(B*n_frames x C x H x W)
             
             #BACKBONE FRAME FEATURE EXTRACTION
             if self.backbone == 'mobilenet':
