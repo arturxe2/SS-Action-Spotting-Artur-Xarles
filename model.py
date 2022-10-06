@@ -86,9 +86,9 @@ class mask_frames(nn.Module):
     def forward(self, frames: torch.Tensor):
         n_B, n_T, H, W, C = frames.shape
         
-        R1 = torch.zeros([n_B, n_T, H, W])
-        R2 = torch.zeros([n_B, n_T, H, W])
-        R3 = torch.zeros([n_B, n_T, H, W])
+        R1 = torch.zeros([n_B, n_T, H, W], dtype=torch.bool)
+        R2 = torch.zeros([n_B, n_T, H, W], dtype=torch.bool)
+        R3 = torch.zeros([n_B, n_T, H, W], dtype=torch.bool)
         
         random_token = frames[torch.randint(0, n_B, (1,)), torch.randint(0, n_T, (1,)), torch.randint(0, H, (1,)), torch.randint(0, W, (1,)), :]
         
@@ -105,19 +105,19 @@ class mask_frames(nn.Module):
         while (R1.sum() < n1) & (i < self.n_generations):
             R1[b[i], max(0, t[i]-self.n_consecutive[0]):min(t[i]+self.n_consecutive[0], n_T-1), 
               max(0, h[i]-self.n_consecutive[1]):min(h[i]+self.n_consecutive[1], H-1), 
-              max(0, w[i]-self.n_consecutive[2]):min(w[i]+self.n_consecutive[2], W-1)] = 1
+              max(0, w[i]-self.n_consecutive[2]):min(w[i]+self.n_consecutive[2], W-1)] = True
             i += 1
             
         while (R2.sum() < n2) & (i < self.n_generations):
             R2[b[i], max(0, t[i]-self.n_consecutive[0]):min(t[i]+self.n_consecutive[0], n_T-1), 
               max(0, h[i]-self.n_consecutive[1]):min(h[i]+self.n_consecutive[1], H-1), 
-              max(0, w[i]-self.n_consecutive[2]):min(w[i]+self.n_consecutive[2], W-1)] = 1
+              max(0, w[i]-self.n_consecutive[2]):min(w[i]+self.n_consecutive[2], W-1)] = True
             i += 1
             
         while (R3.sum() < n3) & (i < self.n_generations):
             R3[b[i], max(0, t[i]-self.n_consecutive[0]):min(t[i]+self.n_consecutive[0], n_T-1), 
               max(0, h[i]-self.n_consecutive[1]):min(h[i]+self.n_consecutive[1], H-1), 
-              max(0, w[i]-self.n_consecutive[2]):min(w[i]+self.n_consecutive[2], W-1)] = 1
+              max(0, w[i]-self.n_consecutive[2]):min(w[i]+self.n_consecutive[2], W-1)] = True
             i += 1
             
         frames[R1] = self.mask_token
