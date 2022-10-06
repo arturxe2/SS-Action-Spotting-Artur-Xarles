@@ -82,4 +82,4 @@ def vid2frame(vid_path = '/data-net/datasets/SoccerNetv2/videos_lowres',
             else:
                 break
             
-vid2frame(split = ['valid'])
+vid2frame(split = ['test'])
