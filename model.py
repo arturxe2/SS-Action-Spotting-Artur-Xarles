@@ -695,6 +695,7 @@ class ModelFrames(nn.Module):
         self.model = model
         self.framestride = framestride
         self.backbone = backbone
+        self.masking = masking
         
         #MODEL BACKBONES (VISUAL ONES)
         if backbone == 'mobilenet':
@@ -816,54 +817,110 @@ class ModelFrames(nn.Module):
         #INPUTS TO FLOAT
         inputsV = inputsV.float() #(B x n_frames x H x W x C)
         inputsA = inputsA.float() #(B x chunk_size*framerate x n_features)
-        
-        inputsV = inputsV.permute((0, 1, 4, 2, 3)) #(B x n_frames x C x H x W)
         images_shape = inputsV.shape
         
-        inputsV = inputsV.view(-1, images_shape[2], images_shape[3], images_shape[4]) #(n x H x W x C)
+        #DIFFERENT MASKING STRATEGIES (VIDEO)
         
+        #FRAME MASKING STRATEGY
+        if self.masking == 'frame':
         
-        #BACKBONE
-        if self.backbone == 'mobilenet':
-            inputsV = self.mobilenet(inputsV) #(n x 576)
-        elif self.backbone == 'vit':
-            inputsV = self.transform(inputsV)
-            inputsV = self.vit(inputsV)
+        #MASKING OF FRAMES
+            if not inference:
+                inputsVmask, MV = self.maskingV(inputsV) #(B x n_frames x H x W x C), (B x n_frames)
+                inputsVmask = inputsVmask.permute((0, 1, 4, 2, 3)) #(B x n_frames x C x H x W)
+                inputsVmask = inputsVmask.view(-1, images_shape[4], images_shape[2], images_shape[3]) #(B*n_frames x C x H x W)
+                
+            inputsV.view(-1, images_shape[4], images_shape[2], images_shape[3]) #(B*n_frames x C x H x W)
             
-        inputsV = inputsV.view(images_shape[0], images_shape[1], -1) #(B x n_frames x n_features(576))
+            #BACKBONE FRAME FEATURE EXTRACTION
+            if self.backbone == 'mobilenet':
+                inputsV = self.mobilenet(inputsV) #(B*n_frames x n_features)
+                if not inference:
+                    inputsVmask = self.mobilenet(inputsVmask) #(B*n_frames x n_features)
+            elif self.backbone == 'vit':
+                inputsV = self.transform(inputsV) #(B*n_frames x C x H2 x W2)
+                inputsV = self.vit(inputsV) #(B*n_frames x n_features)
+                if not inference:
+                    inputsVmask = self.transform(inputsVmask) #(B*n_frames x C x H2 x W2)
+                    inputsVmask = self.vit(inputsVmask) #(B*n_frames x n_features)        
+                    
+            #PFFN TO REDUCE DIMENSIONALITY
+            inputsV = inputsV.view(images_shape[0], images_shape[1], -1) #(B x n_frames x n_features)
+            inputsV = inputsV.permute((0, 2, 1)) #(B x n_features x n_frames)
+            inputsV = self.relu(self.conv1V(inputsV)) #(B x d x n_frames)
+            inputsV = inputsV.permute((0, 2, 1)) #(B x n_frames x d)
+            inputsV = self.norm1V(inputsV) #(B x n_frames x d)
+            
+            #PFFN TO REDUCE DIMENSIONALITY (MASKED PART)
+            if not inference:
+                inputsVmask = inputsVmask.view(images_shape[0], images_shape[1], -1) #(B x n_frames x n_features)
+                inputsVmask = inputsVmask.permute((0, 2, 1)) #(B x n_features x n_frames)
+                inputsVmask = self.relu(self.conv1V(inputsVmask)) #(B x d x n_frames)
+                inputsVmask = inputsVmask.permute((0, 2, 1)) #(B x n_frames x d)
+                inputsVmask = self.norm1V(inputsVmask) #(B x n_frames x d)
+                
+            #IF NOT TRAINING
+            if inference:
+                inputsVmask = torch.clone(inputsV) #(B x n_frames x d)
+            
+        #TOKEN MASKING STRATEGY
+        elif self.masking == 'token':
+            
+            #RESHAPE
+            inputsV = inputsV.permute((0, 1, 4, 2, 3)) #(B x n_frames x C x H x W)
+            inputsV = inputsV.view(-1, images_shape[4], images_shape[2], images_shape[3]) #(n x H x W x C)
+            
+            #BACKBONE FRAME FEATURE EXTRACTION
+            if self.backbone == 'mobilenet':
+                inputsV = self.mobilenet(inputsV) #(n x 576)
+            elif self.backbone == 'vit':
+                inputsV = self.transform(inputsV)
+                inputsV = self.vit(inputsV)
+            
+            #PFFN TO REDUCE DIMENSIONALITY 
+            inputsV = inputsV.view(images_shape[0], images_shape[1], -1) #(B x n_frames x n_features(576))
+            inputsV = inputsV.permute((0, 2, 1)) #(B x n_features x chunk_size*framerate)
+            inputsV = self.relu(self.conv1V(inputsV)) #(B x d x chunk_size*framerate)
+            inputsV = inputsV.permute((0, 2, 1)) #(B x chunk_size*framerate x d)
+
+            #CREATE MASKING COPY
+            inputsVmask = torch.clone(inputsV) #(B x chunk_size*framerate x d)
+            
+            #MASKING OF TOKENS
+            if (not inference):
+                inputsVmask, MV = self.maskingV(inputsVmask) #(B x chunk_size*framerate x d)
+                
+                
+            #LAYER NORMALIZATION
+            inputsV = self.norm1V(inputsV) #(B x chunk_size*framerate x d)
+            inputsVmask = self.norm1V(inputsVmask) #(B x chunk_size*framerate x d)
+            
+            
+        #AUDIO FEATURES
         
-        del images_shape
-        
-        #PERMUTATION
-        inputsV = inputsV.permute((0, 2, 1)) #(B x n_features x chunk_size*framerate)
+        #PFFN TO REDUCE DIMENSIONALITY
         inputsA = inputsA.permute((0, 2, 1)) #(B x n_features x chunk_size*framerate)
-        
-        #REDUCE DIMENSIONALITY
-        inputsV = self.relu(self.conv1V(inputsV)) #(B x d x chunk_size*framerate)
         inputsA = self.relu(self.conv1A(inputsA)) #(B x d x chunk_size*framerate)
-        
-        #PERMUTATION
-        inputsV = inputsV.permute((0, 2, 1)) #(B x chunk_size*framerate x d)
         inputsA = inputsA.permute((0, 2, 1)) #(B x chunk_size*framerate x d)
         
-        #COPY OF FEATURES (FOR MASKED ONES)
-        inputsVmask = torch.clone(inputsV) #(B x chunk_size*framerate x d)
+        #CREATE MASKING COPY
         inputsAmask = torch.clone(inputsA) #(B x chunk_size*framerate x d)
         
-        #GET MASKING OF FEATURES
+        #MASKING OF TOKENS
         if not inference:
-            inputsVmask, MV = self.maskingV(inputsVmask) #(B x chunk_size*framerate x d)
             inputsAmask, MA = self.maskingA(inputsAmask) #(B x chunk_size*framerate x d)
+        
+        #LAYER NORMALIZATION
+        inputsA = self.norm1A(inputsA) #(B x chunk_size*framerate x d)
+        inputsAmask = self.norm1A(inputsAmask) #(B x chunk_size*framerate x d)
             
-        else:
+        
+        #NOT TRAINING PROCEDURE 
+        if inference:
             MV = torch.rand([inputsVmask.shape[0], inputsVmask.shape[1]]) < 0.05
             MA = torch.rand([inputsAmask.shape[0], inputsAmask.shape[1]]) < 0.05
         
-        #LAYER NORMALIZATION
-        inputsV = self.norm1V(inputsV) #(B x chunk_size*framerate x d)
-        inputsA = self.norm1A(inputsA) #(B x chunk_size*framerate x d)
-        inputsVmask = self.norm1V(inputsVmask) #(B x chunk_size*framerate x d)
-        inputsAmask = self.norm1A(inputsAmask) #(B x chunk_size*framerate x d)
+        
         
         #POSITIONAL ENCODING
         inputsV = inputsV + self.posV #(B x chunk_size*framerate x d)
