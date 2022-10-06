@@ -124,6 +124,7 @@ class mask_frames(nn.Module):
         frames[R2] = random_token
         
         M = (R1 | R2) | R3
+        M = torch.max(M.view(n_B, n_T, -1), dim=2).values
         
         return frames, M
     
