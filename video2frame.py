@@ -12,7 +12,7 @@ from tqdm import tqdm
 
 def vid2frame(vid_path = '/data-net/datasets/SoccerNetv2/videos_lowres',
               vid_name = '224p.mkv',
-              store_path = '/data-local/data1-hdd/axesparraguera/SoccerNetFrames',
+              store_path = '/data-local/data1-ssd/axesparraguera/SoccerNetFrames',
               frame_stride = 4,
               split = ['train', 'valid', 'test', 'challenge']):
     
@@ -82,4 +82,4 @@ def vid2frame(vid_path = '/data-net/datasets/SoccerNetv2/videos_lowres',
             else:
                 break
             
-vid2frame(split = ['valid', 'test', 'challenge'])
+vid2frame(split = ['train'])

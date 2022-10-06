@@ -102,8 +102,6 @@ class mask_frames(nn.Module):
         n1 = int((tnpixels * self.p_mask * 0.8) // self.npixels)
         n2 = int((tnpixels * self.p_mask * 0.1) // self.npixels)
         
-        i = 0
-
         for i in range(n1):
             R1[b[i], max(0, t[i]-self.n_consecutive[0]):min(t[i]+self.n_consecutive[0], n_T-1), 
               max(0, h[i]-self.n_consecutive[1]):min(h[i]+self.n_consecutive[1], H-1), 
