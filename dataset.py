@@ -560,10 +560,10 @@ class SoccerNetClipsTesting(Dataset):
     
     
 class OnlineSoccerNetFrames(Dataset):
-    def __init__(self, path_frames = '/data-local/data1-sdd/axesparraguera/SoccerNetFrames', 
+    def __init__(self, path_frames = '/data-local/data1-ssd/axesparraguera/SoccerNetFrames', 
                  path_audio = '/data-local/data1-ssd/axesparraguera/SoccerNetFeatures',  
                  path_labels = "/data-net/datasets/SoccerNetv2/ResNET_TF2",
-                 path_store = '/data-local/data1-sdd/axesparraguera/SoccerNetSamples',
+                 path_store = '/data-local/data1-ssd/axesparraguera/SoccerNetSamples',
                  features_audio = 'audio_embeddings_2fps.npy', 
                  split=["train"], framerate=2, chunk_size=5, framestride = 4, store = True):
 
@@ -592,9 +592,9 @@ class OnlineSoccerNetFrames(Dataset):
             z = 0
             for game in tqdm(self.listGames):
                 z += 1
-                if z == 150:
+                if z == 30:
                     break
-                if ('valid' in split) & (z >=50):
+                if ('valid' in split) & (z >=30):
                     break
                 
                 feat_half1A = np.load(os.path.join(path_audio, game, "1_" + features_audio))

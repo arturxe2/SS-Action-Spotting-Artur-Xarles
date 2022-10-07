@@ -31,25 +31,25 @@ def main(args):
     # create dataset
     if not args.test_only:    
         if args.version == 2:
-            dataset_Train = OnlineSoccerNetFrames(path_frames = '/data-local/data1-sdd/axesparraguera/SoccerNetFrames', 
+            dataset_Train = OnlineSoccerNetFrames(path_frames = '/data-local/data1-ssd/axesparraguera/SoccerNetFrames', 
                          path_audio = '/data-local/data1-ssd/axesparraguera/SoccerNetFeatures',  
                          path_labels = "/data-net/datasets/SoccerNetv2/ResNET_TF2",
-                         path_store = '/data-local/data1-sdd/axesparraguera/SoccerNetSamples',
+                         path_store = '/data-local/data1-ssd/axesparraguera/SoccerNetSamples',
                          features_audio = 'audio_embeddings_2fps.npy', 
                          split=["train"], framerate=args.framerate, chunk_size=args.chunk_size, framestride = 4, store = True)
                
-            dataset_Valid = OnlineSoccerNetFrames(path_frames = '/data-local/data1-sdd/axesparraguera/SoccerNetFrames', 
+            dataset_Valid = OnlineSoccerNetFrames(path_frames = '/data-local/data1-ssd/axesparraguera/SoccerNetFrames', 
                          path_audio = '/data-local/data1-ssd/axesparraguera/SoccerNetFeatures',  
                          path_labels = "/data-net/datasets/SoccerNetv2/ResNET_TF2",
-                         path_store = '/data-local/data1-sdd/axesparraguera/SoccerNetSamples',
+                         path_store = '/data-local/data1-ssd/axesparraguera/SoccerNetSamples',
                          features_audio = 'audio_embeddings_2fps.npy', 
                          split=["valid"], framerate=args.framerate, chunk_size=args.chunk_size, framestride = 4, store = True)
             
             
-            dataset_Valid_metric  = OnlineSoccerNetFrames(path_frames = '/data-local/data1-sdd/axesparraguera/SoccerNetFrames', 
+            dataset_Valid_metric  = OnlineSoccerNetFrames(path_frames = '/data-local/data1-ssd/axesparraguera/SoccerNetFrames', 
                          path_audio = '/data-local/data1-ssd/axesparraguera/SoccerNetFeatures',  
                          path_labels = "/data-net/datasets/SoccerNetv2/ResNET_TF2",
-                         path_store = '/data-local/data1-sdd/axesparraguera/SoccerNetSamples',
+                         path_store = '/data-local/data1-ssd/axesparraguera/SoccerNetSamples',
                          features_audio = 'audio_embeddings_2fps.npy', 
                          split=["valid"], framerate=args.framerate, chunk_size=args.chunk_size, framestride = 4, store = False)
             
