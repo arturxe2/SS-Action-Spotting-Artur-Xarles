@@ -560,10 +560,10 @@ class SoccerNetClipsTesting(Dataset):
     
     
 class OnlineSoccerNetFrames(Dataset):
-    def __init__(self, path_frames = '/data-local/data1-hdd/axesparraguera/SoccerNetFrames', 
-                 path_audio = '/data-local/data3-ssd/axesparraguera',  
+    def __init__(self, path_frames = '/data-local/data1-sdd/axesparraguera/SoccerNetFrames', 
+                 path_audio = '/data-local/data1-ssd/axesparraguera/SoccerNetFeatures',  
                  path_labels = "/data-net/datasets/SoccerNetv2/ResNET_TF2",
-                 path_store = '/data-local/data1-hdd/axesparraguera/SoccerNetFrames/trial',
+                 path_store = '/data-local/data1-sdd/axesparraguera/SoccerNetSamples',
                  features_audio = 'audio_embeddings_2fps.npy', 
                  split=["train"], framerate=2, chunk_size=5, framestride = 4, store = True):
 

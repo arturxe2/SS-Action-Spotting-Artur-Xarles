@@ -17,7 +17,7 @@ def vid2frame(vid_path = '/data-net/datasets/SoccerNetv2/videos_lowres',
               split = ['train', 'valid', 'test', 'challenge']):
     
     listGames = getListGames(split)
-    for game in tqdm(listGames):
+    for game in tqdm(listGames.reverse()):
         
         #HALF 1
         print('Doing half 1...')
@@ -82,4 +82,4 @@ def vid2frame(vid_path = '/data-net/datasets/SoccerNetv2/videos_lowres',
             else:
                 break
             
-vid2frame(split = ['challenge'])
+vid2frame(split = ['train'])
