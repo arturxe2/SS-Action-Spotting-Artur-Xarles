@@ -830,8 +830,8 @@ class ModelFrames(nn.Module):
         
         
         #INPUTS TO FLOAT
-        #inputsV = inputsV.float() #(B x n_frames x H x W x C)
-        #inputsA = inputsA.float() #(B x chunk_size*framerate x n_features)
+        inputsV = inputsV.float() #(B x n_frames x H x W x C)
+        inputsA = inputsA.float() #(B x chunk_size*framerate x n_features)
         images_shape = inputsV.shape
         
         #DIFFERENT MASKING STRATEGIES (VIDEO)
