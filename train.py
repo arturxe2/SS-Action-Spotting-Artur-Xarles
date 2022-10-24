@@ -15,6 +15,7 @@ from SoccerNet.Evaluation.utils import AverageMeter, EVENT_DICTIONARY_V2, INVERS
 from SoccerNet.Evaluation.ActionSpotting import evaluate
 import json
 import zipfile
+import cv2
 
 #Define trainer
 def trainerSS(train_loader,
@@ -40,10 +41,28 @@ def trainerSS(train_loader,
         best_model_path = os.path.join("SSmodels", model_name, "model.pth.tar")
 
         # train for one epoch
-        loss_training, losses1, losses2, losses3 = trainSS(train_loader, model, 
-                              criterionVA, criterionMask, 
-                              optimizer, epoch + 1, momentum = momentum,
-                              train=True, n_batches = n_batches)
+        if epoch != (max_epochs - 1):
+            loss_training, losses1, losses2, losses3 = trainSS(train_loader, model, 
+                            criterionVA, criterionMask, 
+                            optimizer, epoch + 1, momentum = momentum,
+                            train=True, n_batches = n_batches, last_epoch = False)
+
+        else:
+            loss_training, losses1, losses2, losses3 = trainSS(train_loader, model, 
+                            criterionVA, criterionMask, 
+                            optimizer, epoch + 1, momentum = momentum,
+                            train=True, n_batches = n_batches, last_epoch = True)
+
+            #Get only a portion of the tokens
+            #model.memory_tokensMV = torch.cat(model.memory_tokensMV)[0:50000, :]
+            #model.memory_tokensUMV = torch.cat(model.memory_tokensUMV)[0:50000, :]
+            #model.memory_tokensMA = torch.cat(model.memory_tokensMA)[0:50000, :]
+            #model.memory_tokensUMA = torch.cat(model.memory_tokensUMA)[0:50000, :]
+            #np.save(os.path.join('SSmodels', model_name) + '/tokensMV.npy', ((model.memory_tokensMV).cpu().detach().numpy()))
+            #np.save(os.path.join('SSmodels', model_name) + '/tokensUMV.npy', ((model.memory_tokensUMV).cpu().detach().numpy()))
+            #np.save(os.path.join('SSmodels', model_name) + '/tokensMA.npy', ((model.memory_tokensMA).cpu().detach().numpy()))
+            #np.save(os.path.join('SSmodels', model_name) + '/tokensUMA.npy', ((model.memory_tokensUMA).cpu().detach().numpy()))
+
         losses_path.append([losses1, losses2, losses3])
         state = {
             'epoch': epoch + 1,
@@ -64,6 +83,9 @@ def trainerSS(train_loader,
         
         else:
             n_bad_epochs += 1
+
+        if ((epoch+1) % 5) == 0:
+            torch.save(state, os.path.join("SSmodels", model_name, "model_" + str(epoch+1) + '.pth.tar'))
     
     losses_path = np.array(losses_path)
     np.save(os.path.join('SSmodels', model_name) + '/losses.npy', losses_path)
@@ -79,7 +101,8 @@ def trainSS(dataloader,
           epoch,
           momentum = 0.999,
           train=False,
-          n_batches=4):
+          n_batches=4,
+          last_epoch=False):
 
     batch_time = AverageMeter()
     data_time = AverageMeter()
@@ -97,24 +120,38 @@ def trainSS(dataloader,
         model.eval()
 
     end = time.time()
-    
     #Potser al fer cuda() hi ha el problema
     with tqdm(enumerate(dataloader), total=len(dataloader), ncols=160) as t:
         
         for i, (featsV, featsA, labels) in t:
-                
             # measure data loading time
             data_time.update(time.time() - end)
             featsV = featsV.cuda()
             featsA = featsA.cuda()
             labels = labels.cuda()
             # compute output
-            classV, classA, Vreal, Vpreds, Areal, Apreds, outputs = model(featsV, featsA)
+            classV, classA, negV, negA, Vreal, Vpreds, Areal, Apreds, outputs = model(featsV, featsA, store_tokens = last_epoch)
+            loss1 = criterionVA(classV, classA, negV, negA) / n_batches
+            is_loss2 = Vreal.shape[0] > 1
+            is_loss3 = Areal.shape[0] > 1
+            if is_loss2 & is_loss3:
+                loss2 = criterionVA(Vreal, Vpreds) / n_batches
+                loss3 = criterionVA(Areal, Apreds) / n_batches
+                loss = loss1 + loss2 + loss3
+            elif is_loss2:
+                print('0 batches video')
+                loss2 = criterionVA(Vreal, Vpreds) / n_batches
+                loss = loss1 + loss2
+            elif is_loss3:
+                print('0 batches audio')
+                loss3 = criterionVA(Areal, Apreds) / n_batches
+                loss = loss1 + loss3
+            else:
+                print('0 batches video')
+                print('0 batches audio')
+                loss = loss1
+
             
-            loss1 = criterionVA(classV, classA) / n_batches
-            loss2 = criterionVA(Vreal, Vpreds) / n_batches
-            loss3 = criterionVA(Areal, Apreds) / n_batches
-            loss = loss1 + loss2 + loss3# + criterionVA(classV, classA)
             #loss.requires_grad = True
             # measure accuracy and record loss
             losses.update(loss.item(), featsV.size(0) + featsA.size(0))
@@ -130,8 +167,8 @@ def trainSS(dataloader,
                 if ((i + 1) % n_batches == 0) or (i + 1 == len(dataloader)):
                     #Update parameters
                     optimizer.step()
-                    optimizer.zero_grad()
-                
+                    optimizer.zero_grad(set_to_none=True)
+
                     #Momentum step
                 
                     for Vencoder, VencoderMask in zip(model.encoderV.parameters(), model.encoderVmask.parameters()):
@@ -178,6 +215,7 @@ def trainerAS(train_loader,
             max_epochs=1000,
             evaluation_frequency=10,
             freeze = True,
+            SS_base = 0,
             n_batches = 4):
 
     logging.info("start training action spotting")
@@ -200,16 +238,18 @@ def trainerAS(train_loader,
         model.encoderM.requires_grad_(True)
         
     
-    
+    losses_path = []
     for epoch in range(max_epochs):
 
-        
-        best_model_path = os.path.join("ASmodels", model_name, "model.pth.tar")
+        if SS_base == 0:
+            best_model_path = os.path.join("ASmodels", model_name, "model.pth.tar")
+        else:
+            best_model_path = os.path.join('ASmodels', model_name, 'model_' + str(SS_base) + '.pth.tar')
 
         # train for one epoch
         loss_training = trainAS(train_loader, model, criterion, 
-                              optimizer, epoch + 1,
-                              train=True)
+                            optimizer, epoch + 1,
+                            train=True)
 
         # evaluate on validation set
         loss_validation = trainAS(
@@ -257,6 +297,11 @@ def trainerAS(train_loader,
                 "Plateau Reached and no more reduction -> Exiting Loop")
             break
 
+        losses_path.append([loss_training, loss_validation])
+
+    losses_path = np.array(losses_path)
+    np.save(os.path.join('ASmodels', model_name) + '/losses.npy', losses_path)
+
     return
 
 #Define train for AS part
@@ -293,7 +338,7 @@ def trainAS(dataloader,
             featsA = featsA.cuda()
             labels = labels.cuda()
             # compute output
-            classV, classA, Vreal, Vpreds, Areal, Apreds, outputs = model(featsV, featsA, inference=True)
+            classV, classA, negV, negA, Vreal, Vpreds, Areal, Apreds, outputs = model(featsV, featsA, inference=True)
             
             loss = criterion(labels, outputs) / n_batches
         
@@ -353,7 +398,7 @@ def test(dataloader, model, model_name):
             # print(feats.shape)
     
             # compute output
-            classV, classA, Vreal, Vpreds, Areal, Apreds, outputs = model(featsV, featsA)
+            classV, classA, negV, negA, Vreal, Vpreds, Areal, Apreds, outputs = model(featsV, featsA, inference=True)
     
             all_labels.append(labels.detach().numpy())
             all_outputs.append(outputs.cpu().detach().numpy())
@@ -433,7 +478,7 @@ def testSpotting(dataloader, model, model_name, overwrite=True, NMS_window=30, N
                         (b+1) < len(featV_half1) else len(featV_half1)-1
                     featV = featV_half1[start_frame:end_frame].cuda()
                     featA = featA_half1[start_frame:end_frame].cuda()
-                    classV, classA, Vreal, Vpreds, Areal, Apreds, outputs = model(featV, featA, inference = True)
+                    classV, classA, negV, negA, Vreal, Vpreds, Areal, Apreds, outputs = model(featV, featA, inference = True)
                     outputs = outputs.cpu().detach().numpy()
                     timestamp_long_half_1.append(outputs)
                 timestamp_long_half_1 = np.concatenate(timestamp_long_half_1)
@@ -445,7 +490,7 @@ def testSpotting(dataloader, model, model_name, overwrite=True, NMS_window=30, N
                         (b+1) < len(featV_half2) else len(featV_half2)-1
                     featV = featV_half2[start_frame:end_frame].cuda()
                     featA = featA_half2[start_frame:end_frame].cuda()
-                    classV, classA, Vreal, Vpreds, Areal, Apreds, outputs = model(featV, featA, inference = True)
+                    classV, classA, negV, negA, Vreal, Vpreds, Areal, Apreds, outputs = model(featV, featA, inference = True)
                     outputs = outputs.cpu().detach().numpy()
                     timestamp_long_half_2.append(outputs)
                 timestamp_long_half_2 = np.concatenate(timestamp_long_half_2)
@@ -572,3 +617,515 @@ def testSpotting(dataloader, model, model_name, overwrite=True, NMS_window=30, N
 
     
     return results
+
+
+
+#Define test spotting
+def testSpotting3(dataloader, model, model_name, overwrite=True, NMS_window=30, NMS_threshold=0.5, 
+    framestride=8, framerate=10, chunk_size=4, path_frames='/data-local/data1-ssd/axesparraguera/SoccerNetFrames', stride = 0.5):
+
+    stride = stride * framerate
+
+    split = dataloader.dataset.split
+    # print(split)
+    output_results = os.path.join("ASmodels", model_name, f"results_spotting_{split}.zip")
+    output_folder = f"outputs_{split}"
+
+    if not os.path.exists(output_results) or overwrite:
+        batch_time = AverageMeter()
+        data_time = AverageMeter()
+
+        spotting_grountruth = list()
+        spotting_grountruth_visibility = list()
+        spotting_predictions = list()
+
+        model.eval()
+
+        count_visible = torch.FloatTensor([0.0]*dataloader.dataset.num_classes)
+        count_unshown = torch.FloatTensor([0.0]*dataloader.dataset.num_classes)
+        count_all = torch.FloatTensor([0.0]*dataloader.dataset.num_classes)
+
+        n_frames = int((chunk_size * 25) // framestride)
+        n_repeated = n_frames - int((stride / framerate * 25) // framestride) 
+
+        end = time.time()
+        with tqdm(enumerate(dataloader), total=len(dataloader), ncols=120) as t:
+
+            for i, (game_ID, featA_half1, featA_half2, label_half1, label_half2, frames1, frames2) in t:
+
+                data_time.update(time.time() - end)
+    
+                # Batch size of 1
+                    
+                game_ID = game_ID[0]
+                featA_half1 = featA_half1.squeeze(0)
+                label_half1 = label_half1.float().squeeze(0)
+                featA_half2 = featA_half2.squeeze(0)
+                label_half2 = label_half2.float().squeeze(0)
+                    
+    
+                # Compute the output for batches of frames
+                BS = 16
+                timestamp_long_half_1 = []
+                featV = []
+                prev = 0
+                for b in range(len(featA_half1)):
+                    if (b % BS == 0) | (b == len(featA_half1)-1):
+                        if b != 0:
+                            featA = featA_half1[prev:b].cuda()
+                            featV = torch.tensor(np.array(featV)).cuda()
+                            classV, classA, negV, negA, Vreal, Vpreds, Areal, Apreds, outputs = model(featV, featA, inference = True)
+                            outputs = outputs.cpu().detach().numpy()
+                            timestamp_long_half_1.append(outputs)
+                            featV = []
+                            prev = b
+
+                    initial_frame = ((b - (chunk_size // 2)) * 25) // 4 * 4
+                    if b == 0:
+                        featV.append([cv2.imread(os.path.join(path_frames, game_ID, 'half1', 'frame ' + str(max(0, min(int(frames1), int(initial_frame + j * framestride)))) + '.jpg')) for j in range(n_frames)])
+                        aux_featV = featV[-1][-n_repeated:]
+
+                    else:
+
+                        s = [aux_featV.append(cv2.imread(os.path.join(path_frames, game_ID, 'half1', 'frame ' + str(max(0, min(int(frames1), int(initial_frame + n_repeated * framestride + j * framestride)))) + '.jpg'))) for j in range(n_frames - n_repeated)]
+                        featV.append(aux_featV)
+                        aux_featV = featV[-1][-n_repeated:]
+
+
+
+                timestamp_long_half_1 = np.concatenate(timestamp_long_half_1)
+
+                timestamp_long_half_2 = []
+                prev = 0
+                featV = []
+                for b in range(len(featA_half2)):
+                    if (b % BS == 0) | (b == len(featA_half2)-1):
+                        if b != 0:
+                            featA = featA_half2[prev:b].cuda()
+                            featV = torch.tensor(np.array(featV)).cuda()
+                            classV, classA, negV, negA, Vreal, Vpreds, Areal, Apreds, outputs = model(featV, featA, inference = True)
+                            outputs = outputs.cpu().detach().numpy()
+                            timestamp_long_half_2.append(outputs)
+                            featV = []
+                            prev = b
+
+                    initial_frame = ((b - (chunk_size // 2)) * 25) // 4 * 4
+                    if b == 0:
+                        featV.append([cv2.imread(os.path.join(path_frames, game_ID, 'half2', 'frame ' + str(max(0, min(int(frames2), int(initial_frame + j * framestride)))) + '.jpg')) for j in range(n_frames)])
+                        aux_featV = featV[-1][-n_repeated:]
+
+                    else:
+                        s = [aux_featV.append(cv2.imread(os.path.join(path_frames, game_ID, 'half2', 'frame ' + str(max(0, min(int(frames2), int(initial_frame + n_repeated * framestride + j * framestride)))) + '.jpg'))) for j in range(n_frames - n_repeated)]
+                        featV.append(aux_featV)
+                        aux_featV = featV[-1][-n_repeated:]
+                
+                timestamp_long_half_2 = np.concatenate(timestamp_long_half_2)
+
+                '''
+                for b in range(int(np.ceil(len(featA_half1)/BS))):
+                    start_frame = BS*b
+                    end_frame = BS*(b+1) if BS * \
+                        (b+1) < len(featA_half1) else len(featA_half1)-1
+                    
+                    featA = featA_half1[start_frame:end_frame].cuda()
+                    classV, classA, Vreal, Vpreds, Areal, Apreds, outputs = model(featV, featA, inference = True)
+                    outputs = outputs.cpu().detach().numpy()
+                    timestamp_long_half_1.append(outputs)
+                timestamp_long_half_1 = np.concatenate(timestamp_long_half_1)
+    
+                timestamp_long_half_2 = []
+                for b in range(int(np.ceil(len(featV_half2)/BS))):
+                    start_frame = BS*b
+                    end_frame = BS*(b+1) if BS * \
+                        (b+1) < len(featV_half2) else len(featV_half2)-1
+                    featV = featV_half2[start_frame:end_frame].cuda()
+                    featA = featA_half2[start_frame:end_frame].cuda()
+                    classV, classA, Vreal, Vpreds, Areal, Apreds, outputs = model(featV, featA, inference = True)
+                    outputs = outputs.cpu().detach().numpy()
+                    timestamp_long_half_2.append(outputs)
+                timestamp_long_half_2 = np.concatenate(timestamp_long_half_2)
+                '''
+    
+                timestamp_long_half_1 = timestamp_long_half_1[:, 1:]
+                timestamp_long_half_2 = timestamp_long_half_2[:, 1:]
+    
+                spotting_grountruth.append(torch.abs(label_half1))
+                spotting_grountruth.append(torch.abs(label_half2))
+                spotting_grountruth_visibility.append(label_half1)
+                spotting_grountruth_visibility.append(label_half2)
+                spotting_predictions.append(timestamp_long_half_1)
+                spotting_predictions.append(timestamp_long_half_2)
+                # segmentation_predictions.append(segmentation_long_half_1)
+                # segmentation_predictions.append(segmentation_long_half_2)
+    
+                # count_all = count_all + torch.sum(torch.abs(label_half1), dim=0)
+                # count_visible = count_visible + torch.sum((torch.abs(label_half1)+label_half1)/2, dim=0)
+                # count_unshown = count_unshown + torch.sum((torch.abs(label_half1)-label_half1)/2, dim=0)
+                # count_all = count_all + torch.sum(torch.abs(label_half2), dim=0)
+                # count_visible = count_visible + torch.sum((torch.abs(label_half2)+label_half2)/2, dim=0)
+                # count_unshown = count_unshown + torch.sum((torch.abs(label_half2)-label_half2)/2, dim=0)
+    
+                batch_time.update(time.time() - end)
+                end = time.time()
+    
+                desc = f'Test (spot.): '
+                desc += f'Time {batch_time.avg:.3f}s '
+                desc += f'(it:{batch_time.val:.3f}s) '
+                desc += f'Data:{data_time.avg:.3f}s '
+                desc += f'(it:{data_time.val:.3f}s) '
+                t.set_description(desc)
+    
+    
+    
+                def get_spot_from_NMS(Input, window, thresh=0.0, min_window=3):
+    
+                    detections_tmp = np.copy(Input)
+                    # res = np.empty(np.size(Input), dtype=bool)
+                    indexes = []
+                    MaxValues = []
+                    while(np.max(detections_tmp) >= thresh):
+    
+                        # Get the max remaining index and value
+                        max_value = np.max(detections_tmp)
+                        max_index = np.argmax(detections_tmp)
+                            
+                        # detections_NMS[max_index,i] = max_value
+    
+                        nms_from = int(np.maximum(-(window/2)+max_index,0))
+                        nms_to = int(np.minimum(max_index+int(window/2), len(detections_tmp)))
+                            
+                        if (detections_tmp[nms_from:nms_to] >= thresh).sum() > min_window:
+                            MaxValues.append(max_value)
+                            indexes.append(max_index)
+                        detections_tmp[nms_from:nms_to] = -1
+    
+                    return np.transpose([indexes, MaxValues])
+    
+                framerate = dataloader.dataset.framerate // stride
+                get_spot = get_spot_from_NMS
+    
+                json_data = dict()
+                json_data["UrlLocal"] = game_ID
+                json_data["predictions"] = list()
+                nms_window = [12, 7, 20, 9, 9, 9, 9, 7, 7, 7, 7, 7, 20, 20, 9, 20, 20]
+                for half, timestamp in enumerate([timestamp_long_half_1, timestamp_long_half_2]):
+                        
+                    for l in range(dataloader.dataset.num_classes):
+                        spots = get_spot(
+                            timestamp[:, l], window=nms_window[l]*framerate, thresh=NMS_threshold, min_window = 0)
+
+                        for spot in spots:
+                            # print("spot", int(spot[0]), spot[1], spot)
+                            frame_index = int(spot[0])
+                            confidence = spot[1]
+                            # confidence = predictions_half_1[frame_index, l]
+    
+                            seconds = int((frame_index//framerate)%60)
+                            minutes = int((frame_index//framerate)//60)
+    
+                            prediction_data = dict()
+                            prediction_data["gameTime"] = str(half+1) + " - " + str(minutes) + ":" + str(seconds)
+
+                            prediction_data["label"] = INVERSE_EVENT_DICTIONARY_V2[l]
+
+                            prediction_data["position"] = str(int((frame_index/framerate)*1000))
+                            prediction_data["half"] = str(half+1)
+                            prediction_data["confidence"] = str(confidence)
+                            json_data["predictions"].append(prediction_data)
+                    
+                os.makedirs(os.path.join("ASmodels", model_name, output_folder, game_ID), exist_ok=True)
+                with open(os.path.join("ASmodels", model_name, output_folder, game_ID, "results_spotting.json"), 'w') as output_file:
+                    json.dump(json_data, output_file, indent=4)
+
+
+
+        def zipResults(zip_path, target_dir, filename="results_spotting.json"):            
+            zipobj = zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED)
+            rootlen = len(target_dir) + 1
+            for base, dirs, files in os.walk(target_dir):
+                for file in files:
+                    if file == filename:
+                        fn = os.path.join(base, file)
+                        zipobj.write(fn, fn[rootlen:])
+
+
+        # zip folder
+        zipResults(zip_path=output_results,
+                target_dir = os.path.join("ASmodels", model_name, output_folder),
+                filename="results_spotting.json")
+
+    if split == "challenge": 
+        print("Visit eval.ai to evalaute performances on Challenge set")
+        return None
+    labels_path = "/data-net/datasets/SoccerNetv2/ResNET_TF2"
+    results_l = evaluate(SoccerNet_path=labels_path, 
+                Predictions_path=output_results,
+                split="test",
+                prediction_file="results_spotting.json", 
+                version=2,
+                metric="loose")   
+    
+    results_t = evaluate(SoccerNet_path=labels_path, 
+                Predictions_path=output_results,
+                split="test",
+                prediction_file="results_spotting.json", 
+                version=2,
+                metric="tight")  
+
+    
+    return results_l, results_t
+
+
+
+    #Define test spotting
+def testSpotting2(dataloader, model, model_name, overwrite=True, NMS_window=30, NMS_threshold=0.5, 
+    framestride=8, framerate=2, chunk_size=8, path_frames='/data-local/data1-ssd/axesparraguera/SoccerNetFrames'):
+
+    split = dataloader.dataset.split
+    # print(split)
+    output_results = os.path.join("ASmodels", model_name, f"results_spotting_{split}.zip")
+    output_folder = f"outputs_{split}"
+
+    if not os.path.exists(output_results) or overwrite:
+        batch_time = AverageMeter()
+        data_time = AverageMeter()
+
+        spotting_grountruth = list()
+        spotting_grountruth_visibility = list()
+        spotting_predictions = list()
+
+        model.eval()
+
+        count_visible = torch.FloatTensor([0.0]*dataloader.dataset.num_classes)
+        count_unshown = torch.FloatTensor([0.0]*dataloader.dataset.num_classes)
+        count_all = torch.FloatTensor([0.0]*dataloader.dataset.num_classes)
+
+        n_frames = int((chunk_size / framerate * 25) // framestride)
+        n_repeated = n_frames - int((1 / framerate * 25) // framestride) 
+
+        end = time.time()
+        with tqdm(enumerate(dataloader), total=len(dataloader), ncols=120) as t:
+
+            for i, (game_ID, featA_half1, featA_half2, label_half1, label_half2, frames1, frames2) in t:
+
+                data_time.update(time.time() - end)
+    
+                # Batch size of 1
+                    
+                game_ID = game_ID[0]
+                featA_half1 = featA_half1.squeeze(0)
+                label_half1 = label_half1.float().squeeze(0)
+                featA_half2 = featA_half2.squeeze(0)
+                label_half2 = label_half2.float().squeeze(0)
+                    
+    
+                # Compute the output for batches of frames
+                BS = 16
+                timestamp_long_half_1 = []
+                featV = []
+                prev = 0
+                for b in range(len(featA_half1)):
+                    if (b % BS == 0) | (b == len(featA_half1)-1):
+                        if b != 0:
+                            featA = featA_half1[prev:b].cuda()
+                            featV = torch.tensor(np.array(featV)).cuda()
+                            classV, classA, negV, negA, Vreal, Vpreds, Areal, Apreds, outputs = model(featV, featA, inference = True)
+                            outputs = outputs.cpu().detach().numpy()
+                            timestamp_long_half_1.append(outputs)
+                            featV = []
+                            prev = b
+
+                    initial_frame = ((b - int(chunk_size / 2)) * 25 * 0.5) // 4 * 4
+                    if b == 0:
+                        featV.append([cv2.imread(os.path.join(path_frames, game_ID, 'half1', 'frame ' + str(max(0, min(int(frames1), int(initial_frame + j * framestride)))) + '.jpg')) for j in range(n_frames)])
+                        aux_featV = featV[-1][-n_repeated:]
+
+                    else:
+
+                        s = [aux_featV.append(cv2.imread(os.path.join(path_frames, game_ID, 'half1', 'frame ' + str(max(0, min(int(frames1), int(initial_frame + n_repeated * framestride + j * framestride)))) + '.jpg'))) for j in range(n_frames - n_repeated)]
+                        featV.append(aux_featV)
+                        aux_featV = featV[-1][-n_repeated:]
+
+
+
+                timestamp_long_half_1 = np.concatenate(timestamp_long_half_1)
+
+                timestamp_long_half_2 = []
+                prev = 0
+                featV = []
+                for b in range(len(featA_half2)):
+                    if (b % BS == 0) | (b == len(featA_half2)-1):
+                        if b != 0:
+                            featA = featA_half2[prev:b].cuda()
+                            featV = torch.tensor(np.array(featV)).cuda()
+                            classV, classA, negV, negA, Vreal, Vpreds, Areal, Apreds, outputs = model(featV, featA, inference = True)
+                            outputs = outputs.cpu().detach().numpy()
+                            timestamp_long_half_2.append(outputs)
+                            featV = []
+                            prev = b
+
+                    initial_frame = ((b - int(chunk_size / 2)) * 25 * 0.5) // 4 * 4
+                    if b == 0:
+                        featV.append([cv2.imread(os.path.join(path_frames, game_ID, 'half2', 'frame ' + str(max(0, min(int(frames2), int(initial_frame + j * framestride)))) + '.jpg')) for j in range(n_frames)])
+                        aux_featV = featV[-1][-n_repeated:]
+
+                    else:
+                        s = [aux_featV.append(cv2.imread(os.path.join(path_frames, game_ID, 'half2', 'frame ' + str(max(0, min(int(frames2), int(initial_frame + n_repeated * framestride + j * framestride)))) + '.jpg'))) for j in range(n_frames - n_repeated)]
+                        featV.append(aux_featV)
+                        aux_featV = featV[-1][-n_repeated:]
+                
+                timestamp_long_half_2 = np.concatenate(timestamp_long_half_2)
+
+                '''
+                for b in range(int(np.ceil(len(featA_half1)/BS))):
+                    start_frame = BS*b
+                    end_frame = BS*(b+1) if BS * \
+                        (b+1) < len(featA_half1) else len(featA_half1)-1
+                    
+                    featA = featA_half1[start_frame:end_frame].cuda()
+                    classV, classA, Vreal, Vpreds, Areal, Apreds, outputs = model(featV, featA, inference = True)
+                    outputs = outputs.cpu().detach().numpy()
+                    timestamp_long_half_1.append(outputs)
+                timestamp_long_half_1 = np.concatenate(timestamp_long_half_1)
+    
+                timestamp_long_half_2 = []
+                for b in range(int(np.ceil(len(featV_half2)/BS))):
+                    start_frame = BS*b
+                    end_frame = BS*(b+1) if BS * \
+                        (b+1) < len(featV_half2) else len(featV_half2)-1
+                    featV = featV_half2[start_frame:end_frame].cuda()
+                    featA = featA_half2[start_frame:end_frame].cuda()
+                    classV, classA, Vreal, Vpreds, Areal, Apreds, outputs = model(featV, featA, inference = True)
+                    outputs = outputs.cpu().detach().numpy()
+                    timestamp_long_half_2.append(outputs)
+                timestamp_long_half_2 = np.concatenate(timestamp_long_half_2)
+                '''
+    
+                timestamp_long_half_1 = timestamp_long_half_1[:, 1:]
+                timestamp_long_half_2 = timestamp_long_half_2[:, 1:]
+    
+                spotting_grountruth.append(torch.abs(label_half1))
+                spotting_grountruth.append(torch.abs(label_half2))
+                spotting_grountruth_visibility.append(label_half1)
+                spotting_grountruth_visibility.append(label_half2)
+                spotting_predictions.append(timestamp_long_half_1)
+                spotting_predictions.append(timestamp_long_half_2)
+                # segmentation_predictions.append(segmentation_long_half_1)
+                # segmentation_predictions.append(segmentation_long_half_2)
+    
+                # count_all = count_all + torch.sum(torch.abs(label_half1), dim=0)
+                # count_visible = count_visible + torch.sum((torch.abs(label_half1)+label_half1)/2, dim=0)
+                # count_unshown = count_unshown + torch.sum((torch.abs(label_half1)-label_half1)/2, dim=0)
+                # count_all = count_all + torch.sum(torch.abs(label_half2), dim=0)
+                # count_visible = count_visible + torch.sum((torch.abs(label_half2)+label_half2)/2, dim=0)
+                # count_unshown = count_unshown + torch.sum((torch.abs(label_half2)-label_half2)/2, dim=0)
+    
+                batch_time.update(time.time() - end)
+                end = time.time()
+    
+                desc = f'Test (spot.): '
+                desc += f'Time {batch_time.avg:.3f}s '
+                desc += f'(it:{batch_time.val:.3f}s) '
+                desc += f'Data:{data_time.avg:.3f}s '
+                desc += f'(it:{data_time.val:.3f}s) '
+                t.set_description(desc)
+    
+    
+    
+                def get_spot_from_NMS(Input, window, thresh=0.0, min_window=3):
+    
+                    detections_tmp = np.copy(Input)
+                    # res = np.empty(np.size(Input), dtype=bool)
+                    indexes = []
+                    MaxValues = []
+                    while(np.max(detections_tmp) >= thresh):
+    
+                        # Get the max remaining index and value
+                        max_value = np.max(detections_tmp)
+                        max_index = np.argmax(detections_tmp)
+                            
+                        # detections_NMS[max_index,i] = max_value
+    
+                        nms_from = int(np.maximum(-(window/2)+max_index,0))
+                        nms_to = int(np.minimum(max_index+int(window/2), len(detections_tmp)))
+                            
+                        if (detections_tmp[nms_from:nms_to] >= thresh).sum() > min_window:
+                            MaxValues.append(max_value)
+                            indexes.append(max_index)
+                        detections_tmp[nms_from:nms_to] = -1
+    
+                    return np.transpose([indexes, MaxValues])
+    
+                framerate = dataloader.dataset.framerate
+                get_spot = get_spot_from_NMS
+    
+                json_data = dict()
+                json_data["UrlLocal"] = game_ID
+                json_data["predictions"] = list()
+                nms_window = [12, 7, 20, 9, 9, 9, 9, 7, 7, 7, 7, 7, 20, 20, 9, 20, 20]
+                for half, timestamp in enumerate([timestamp_long_half_1, timestamp_long_half_2]):
+                        
+                    for l in range(dataloader.dataset.num_classes):
+                        spots = get_spot(
+                            timestamp[:, l], window=nms_window[l]*framerate, thresh=NMS_threshold, min_window = 0)
+
+                        for spot in spots:
+                            # print("spot", int(spot[0]), spot[1], spot)
+                            frame_index = int(spot[0])
+                            confidence = spot[1]
+                            # confidence = predictions_half_1[frame_index, l]
+    
+                            seconds = int((frame_index//framerate)%60)
+                            minutes = int((frame_index//framerate)//60)
+    
+                            prediction_data = dict()
+                            prediction_data["gameTime"] = str(half+1) + " - " + str(minutes) + ":" + str(seconds)
+
+                            prediction_data["label"] = INVERSE_EVENT_DICTIONARY_V2[l]
+
+                            prediction_data["position"] = str(int((frame_index/framerate)*1000))
+                            prediction_data["half"] = str(half+1)
+                            prediction_data["confidence"] = str(confidence)
+                            json_data["predictions"].append(prediction_data)
+                    
+                os.makedirs(os.path.join("ASmodels", model_name, output_folder, game_ID), exist_ok=True)
+                with open(os.path.join("ASmodels", model_name, output_folder, game_ID, "results_spotting.json"), 'w') as output_file:
+                    json.dump(json_data, output_file, indent=4)
+
+
+
+        def zipResults(zip_path, target_dir, filename="results_spotting.json"):            
+            zipobj = zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED)
+            rootlen = len(target_dir) + 1
+            for base, dirs, files in os.walk(target_dir):
+                for file in files:
+                    if file == filename:
+                        fn = os.path.join(base, file)
+                        zipobj.write(fn, fn[rootlen:])
+
+
+        # zip folder
+        zipResults(zip_path=output_results,
+                target_dir = os.path.join("ASmodels", model_name, output_folder),
+                filename="results_spotting.json")
+
+    if split == "challenge": 
+        print("Visit eval.ai to evalaute performances on Challenge set")
+        return None
+    labels_path = "/data-net/datasets/SoccerNetv2/ResNET_TF2"
+    results_l = evaluate(SoccerNet_path=labels_path, 
+                Predictions_path=output_results,
+                split="test",
+                prediction_file="results_spotting.json", 
+                version=2,
+                metric="loose")   
+    
+    results_t = evaluate(SoccerNet_path=labels_path, 
+                Predictions_path=output_results,
+                split="test",
+                prediction_file="results_spotting.json", 
+                version=2,
+                metric="tight")  
+
+    
+    return results_l, results_t

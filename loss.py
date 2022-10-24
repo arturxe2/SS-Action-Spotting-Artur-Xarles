@@ -36,18 +36,23 @@ class MaskLoss(torch.nn.Module):
         return lossV
 
 class CLIP_loss(torch.nn.Module):
-    def __init__(self):
+    def __init__(self, aux_queues = True):
         super(CLIP_loss, self).__init__()
+        self.aux_queues = aux_queues
         #self.weights1 = weights1
         
-    def forward(self, classV, classA):
-        
+    def forward(self, classV, classA, aux_negV = None, aux_negA = None):
         batch_size, d = classV.shape
         classV_aux = classV.expand(batch_size, batch_size, d)
-        negV = classV_aux.flatten()[d:].view(batch_size-1, batch_size+1, d)[:, :-1, :].reshape(batch_size, batch_size-1, d)
-        
         classA_aux = classA.expand(batch_size, batch_size, d)
+        negV = classV_aux.flatten()[d:].view(batch_size-1, batch_size+1, d)[:, :-1, :].reshape(batch_size, batch_size-1, d)
         negA = classA_aux.flatten()[d:].view(batch_size-1, batch_size+1, d)[:, :-1, :].reshape(batch_size, batch_size-1, d)
+
+        if aux_negV != None:
+            negV = torch.cat((negV, aux_negV.expand(batch_size, aux_negV.shape[0], aux_negV.shape[1])), dim=1)
+
+        if aux_negA != None:
+            negA = torch.cat((negA, aux_negA.expand(batch_size, aux_negA.shape[0], aux_negA.shape[1])), dim=1)
         
         loss = InfoNCE(negative_mode='paired')
         
@@ -56,9 +61,8 @@ class CLIP_loss(torch.nn.Module):
         
         #neg_samplesV = classV.reapeat()
         #negative_keys = 
-        return (loss(query, positive_key, negA) + loss(positive_key, query, negV)) / 2    
-    
-    
+        return (loss(query, positive_key, negA) + loss(positive_key, query, negV)) / 2
+
 
 
 __all__ = ['InfoNCE', 'info_nce']

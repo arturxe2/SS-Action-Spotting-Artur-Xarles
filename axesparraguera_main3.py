@@ -8,14 +8,14 @@ Created on Mon Oct  3 14:11:13 2022
 import torch
 import numpy as np
 import logging
-from dataset import SoccerNetClips, OnlineSoccerNetClips, SoccerNetClipsTesting, OnlineSoccerNetFrames, SoccerNetFramesTesting
-from model import Model, Model2, ModelFrames
+from dataset import SoccerNetClips, OnlineSoccerNetClips, SoccerNetClipsTesting, OnlineSoccerNetFrames, SoccerNetFramesTesting, SoccerNetFramesAudioTesting, OnlineSoccerNetFramesAudio
+from model import Model, Model2, ModelFramesAudio
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import os
 from datetime import datetime
 import time
 from loss import CLIP_loss, NLLLoss, MaskLoss, NLLLoss_weights
-from train import trainerSS, trainerAS, test, testSpotting, testSpotting2
+from train import trainerSS, trainerAS, test, testSpotting, testSpotting2, testSpotting3
 
 torch.manual_seed(1)
 np.random.seed(1)
@@ -31,26 +31,26 @@ def main(args):
     # create dataset
     if not args.test_only:    
         if args.version == 2:
-            dataset_Train = OnlineSoccerNetFrames(path_frames = '/data-local/data1-ssd/axesparraguera/SoccerNetFrames', 
-                        path_audio = '/data-local/data1-ssd/axesparraguera/SoccerNetFeatures',  
+            dataset_Train = OnlineSoccerNetFramesAudio(path_frames = '/data-local/data1-ssd/axesparraguera/SoccerNetFrames', 
+                        path_audio = '/data-local/data1-ssd/axesparraguera/SoccerNetAudio',  
                         path_labels = "/data-net/datasets/SoccerNetv2/ResNET_TF2",
                         path_store = '/data-local/data1-ssd/axesparraguera/SoccerNetSamples',
-                        features_audio = 'audio_embeddings_2fps.npy', 
-                        split=["train"], framerate=args.framerate, chunk_size=args.chunk_size, framestride = args.framestride, store = True)
-               
-            dataset_Valid = OnlineSoccerNetFrames(path_frames = '/data-local/data1-ssd/axesparraguera/SoccerNetFrames', 
-                        path_audio = '/data-local/data1-ssd/axesparraguera/SoccerNetFeatures',  
+                        features_audio = 'audio', 
+                        split=["train"], framerate=args.framerate, chunk_size=args.chunk_size, framestride = args.framestride, store = False)
+
+            dataset_Valid = OnlineSoccerNetFramesAudio(path_frames = '/data-local/data1-ssd/axesparraguera/SoccerNetFrames', 
+                        path_audio = '/data-local/data1-ssd/axesparraguera/SoccerNetAudio',  
                         path_labels = "/data-net/datasets/SoccerNetv2/ResNET_TF2",
                         path_store = '/data-local/data1-ssd/axesparraguera/SoccerNetSamples',
-                        features_audio = 'audio_embeddings_2fps.npy', 
-                        split=["valid"], framerate=args.framerate, chunk_size=args.chunk_size, framestride = args.framestride, store = True)
+                        features_audio = 'audio', 
+                        split=["valid"], framerate=args.framerate, chunk_size=args.chunk_size, framestride = args.framestride, store = False)
             
             
-            dataset_Valid_metric  = OnlineSoccerNetFrames(path_frames = '/data-local/data1-ssd/axesparraguera/SoccerNetFrames', 
-                        path_audio = '/data-local/data1-ssd/axesparraguera/SoccerNetFeatures',  
+            dataset_Valid_metric  = OnlineSoccerNetFramesAudio(path_frames = '/data-local/data1-ssd/axesparraguera/SoccerNetFrames', 
+                        path_audio = '/data-local/data1-ssd/axesparraguera/SoccerNetAudio',  
                         path_labels = "/data-net/datasets/SoccerNetv2/ResNET_TF2",
                         path_store = '/data-local/data1-ssd/axesparraguera/SoccerNetSamples',
-                        features_audio = 'audio_embeddings_2fps.npy', 
+                        features_audio = 'audio', 
                         split=["valid"], framerate=args.framerate, chunk_size=args.chunk_size, framestride = args.framestride, store = False)
             
     '''
@@ -65,13 +65,14 @@ def main(args):
         
             
     # create model
-    model = ModelFrames(weights=args.load_weights, d=args.hidden_d, 
+    model = ModelFramesAudio(weights=args.load_weights, d=args.hidden_d, 
         chunk_size=args.chunk_size, framerate=args.framerate, p_mask=args.p_mask, 
-        model=args.model, backbone = 'mobilenet', masking = 'token', framestride = args.framestride).cuda()
-       
+        model=args.model, backbone = 'mobilenet', masking = 'token', framestride = args.framestride,
+        K=64).cuda()
+    
     logging.info(model)
     total_params = sum(p.numel()
-                       for p in model.parameters() if p.requires_grad)
+                    for p in model.parameters() if p.requires_grad)
     parameters_per_layer  = [p.numel() for p in model.parameters() if p.requires_grad]
     logging.info("Total number of parameters: " + str(total_params))
     
@@ -81,7 +82,7 @@ def main(args):
         train_loader = torch.utils.data.DataLoader(dataset_Train, 
                             batch_size=args.batch_size, shuffle=True,
                             num_workers=args.max_num_worker, pin_memory=True)
-               
+            
         val_loader = torch.utils.data.DataLoader(dataset_Valid,
             batch_size=args.batch_size, shuffle=False,
             num_workers=args.max_num_worker, pin_memory=True)
@@ -109,45 +110,65 @@ def main(args):
         for idx, (name, params) in enumerate(model.named_parameters()):
             if name in layers:
                 parameters += [{'params': [p for n, p in model.named_parameters() if n == name and p.requires_grad],
-                    'lr': args.LRSS * 1e-01}]
+                    'lr': args.LRSS * 10}]
+            elif 'mobilenet' in name:
+                parameters += [{'params': [p for n, p in model.named_parameters() if n == name and p.requires_grad],
+                    'lr': args.LRSS / 10}]
             else:
                 parameters += [{'params': [p for n, p in model.named_parameters() if n == name and p.requires_grad],
                     'lr': args.LRSS}]
 
-        optimizer = torch.optim.Adam(parameters, lr=args.LRSS, 
+        if not args.SS_not:
+
+            if args.SS_from_last:
+                checkpoint = torch.load(os.path.join('SSmodels', args.model_name, 'model.pth.tar'))
+                model.load_state_dict(checkpoint['state_dict'])
+
+            optimizer = torch.optim.Adam(parameters, lr=args.LRSS, 
                                     betas=(0.9, 0.999), eps=1e-07, 
                                     weight_decay=1e-5, amsgrad=True)
-        #optimizer = torch.optim.SGD(model.parameters(), lr=args.LR,
-        #                            momentum=0.9)
+            #optimizer = torch.optim.SGD(model.parameters(), lr=args.LR,
+            #                            momentum=0.9)
         
-        trainerSS(train_loader, 
+            trainerSS(train_loader, 
                 model, optimizer, criterionVA, criterionMask,
                 model_name=args.model_name,
                 max_epochs=args.max_epochsSS,
                 momentum=.99, n_batches=16)
 
         
+        if not args.AS_not:
 
-        criterion = NLLLoss_weights()
-        optimizer = torch.optim.Adam(model.parameters(), lr=args.LRAS, 
+            if args.SS_model == 0:
+                checkpoint = torch.load(os.path.join('SSmodels', args.model_name, 'model.pth.tar'))
+            else:
+                checkpoint =torch.load(os.path.join('SSmodels', args.model_name, 'model_' + str(args.SS_model) + '.pth.tar'))
+
+            model.load_state_dict(checkpoint['state_dict'])
+            criterion = NLLLoss_weights()
+            optimizer = torch.optim.Adam(model.parameters(), lr=args.LRAS, 
                                 betas=(0.9, 0.999), eps=args.LRe, 
                                 weight_decay=1e-5, amsgrad=True)
     
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', verbose=True, patience=args.patience)
+            scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', verbose=True, patience=args.patience)
     
-        trainerAS(train_loader,
+            trainerAS(train_loader,
                 val_loader,
                 val_metric_loader,
                 model, optimizer, scheduler, criterion,
                 patience=args.patience,
                 model_name=args.model_name,
                 max_epochs=args.max_epochsAS,
+                SS_base=args.SS_model,
                 n_batches=16)
 
 
     
     # For the best model only
-    checkpoint = torch.load(os.path.join("ASmodels", args.model_name, "model.pth.tar"))
+    if args.SS_model == 0:
+        checkpoint = torch.load(os.path.join("ASmodels", args.model_name, "model.pth.tar"))
+    else:
+        checkpoint = torch.load(os.path.join('ASmodels', args.model_name, 'model_' + str(args.SS_model) + '.pth.tar'))
     model.load_state_dict(checkpoint['state_dict'])
     
     
@@ -157,19 +178,20 @@ def main(args):
     
     for split in args.split_test:
 
-        dataset_Test  = SoccerNetFramesTesting(path_frames = '/data-local/data1-ssd/axesparraguera/SoccerNetFrames', 
-                path_audio = '/data-local/data1-ssd/axesparraguera/SoccerNetFeatures',  
+        dataset_Test  = SoccerNetFramesAudioTesting(path_frames = '/data-local/data1-ssd/axesparraguera/SoccerNetFrames', 
+                path_audio = '/data-local/data1-ssd/axesparraguera/SoccerNetAudio',  
                 path_labels = "/data-net/datasets/SoccerNetv2/ResNET_TF2",
-                features_audio = 'audio_embeddings_2fps.npy', 
-                split=["test"], framerate=args.framerate, chunk_size=args.chunk_size*args.framerate, framestride = args.framestride)
+                features_audio = 'audio', 
+                split=["test"], framerate=args.framerate, chunk_size=args.chunk_size, framestride = args.framestride,
+                stride = 0.5)
         print('Test loader')
         test_loader = torch.utils.data.DataLoader(dataset_Test,
             batch_size=1, shuffle=False,
             num_workers=1, pin_memory=True)
         
         
-        results_l, results_t = testSpotting2(test_loader, model=model, model_name=args.model_name, NMS_window=args.NMS_window, NMS_threshold=args.NMS_threshold,
-                        framestride=args.framestride, framerate=args.framerate, chunk_size=args.chunk_size*args.framerate, 
+        results_l, results_t = testSpotting3(test_loader, model=model, model_name=args.model_name, NMS_window=args.NMS_window, NMS_threshold=args.NMS_threshold,
+                        framestride=args.framestride, framerate=args.framerate, chunk_size=args.chunk_size, 
                         path_frames='/data-local/data1-ssd/axesparraguera/SoccerNetFrames')
         if results_l is None:
             continue
@@ -217,13 +239,17 @@ if __name__ == '__main__':
     parser.add_argument('--audio_path', required=False, type=str, default='/data-local/data3-ssd/axesparraguera', help='path of audio features')
     parser.add_argument('--features_audio', required=False, type=str, default='audio_embeddings_2fps.npy', help='audio features name')
     parser.add_argument('--labels_path', required=False, type=str, default='/data-net/datasets/SoccerNetv2/ResNET_TF2', help='path of labels')
-    
+
     parser.add_argument('--max_epochsSS',   required=False, type=int,   default=20,     help='Maximum number of epochs for SS' )
     parser.add_argument('--max_epochsAS',   required=False, type=int,   default=10,     help='Maximum number of epochs for AS' )
     parser.add_argument('--load_weights',   required=False, type=str,   default=None,     help='weights to load' )
     parser.add_argument('--p_mask', required=False, type=float, default=0.2, help='Probability of masking tokens')
     parser.add_argument('--model_name',   required=False, type=str,   default="Pooling",     help='name of the model to save' )
     parser.add_argument('--test_only',   required=False, action='store_true',  help='Perform testing only' )
+    parser.add_argument('--AS_not', required=False, action='store_true', help='Train AS model')
+    parser.add_argument('--SS_not', required=False, action='store_true', help='Train SS model')
+    parser.add_argument('--SS_model', required=False, type=int, default=0, help='SS model to load')
+    parser.add_argument('--SS_from_last', required=False, action='store_true', help='Starts training from last checkpoint')
 
     parser.add_argument('--split_train', nargs='+', default=["train"], help='list of split for training')
     parser.add_argument('--split_valid', nargs='+', default=["valid"], help='list of split for validation')
