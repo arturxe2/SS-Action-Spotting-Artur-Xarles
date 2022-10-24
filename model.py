@@ -1039,7 +1039,7 @@ class ModelFrames(nn.Module):
 
 class ModelFramesAudio(nn.Module):
     def __init__(self, weights=None, num_classes = 17, d=512, chunk_size=5, framerate=2, p_mask = 0.15, 
-                 framestride = 4, model="SSModel", backbone = 'mobilenet', masking = 'token', framestride = 8,
+                 framestride = 4, model="SSModel", backbone = 'mobilenet', masking = 'token',
                  K = 64):
         """
         INPUT: two Tensors of shape (batch_size,chunk_size*framerate,feature_size)
@@ -1200,8 +1200,6 @@ class ModelFramesAudio(nn.Module):
 
         ptr = int(self.queue_ptr)
 
-        self.queueV[]
-
         batch_size = keysV.shape[0]
 
         ptr = int(self.queue_ptr)
@@ -1210,7 +1208,7 @@ class ModelFramesAudio(nn.Module):
             self.queueV[ptr:ptr + batch_size, :] = keysV
             self.queueA[ptr:ptr + batch_size, :] = keysA
 
-            ptr = (ptr + batch_size) % self.keepdim
+            ptr = (ptr + batch_size) % self.K
 
         else:
             self.queueV[ptr:self.K, :] = keysV[0:(self.K - ptr), :]
@@ -1229,9 +1227,10 @@ class ModelFramesAudio(nn.Module):
         #INPUTS TO FLOAT
         inputsV = inputsV.float() #(B x n_frames x H x W x C)
         inputsA = inputsA.float() #(B x n_frames x H x W)
-        inputsA.unsqueeze(-1) #(B x n_frames x H x W x C(1))
+        inputsA = inputsA.unsqueeze(-1) #(B x n_frames x H x W x C(1))
         images_shape = inputsV.shape
         audio_shape = inputsA.shape
+        print(audio_shape)
         
         #DIFFERENT MASKING STRATEGIES (VIDEO)
         
