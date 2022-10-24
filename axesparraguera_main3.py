@@ -146,7 +146,22 @@ def main(args):
 
             model.load_state_dict(checkpoint['state_dict'])
             criterion = NLLLoss_weights()
-            optimizer = torch.optim.Adam(model.parameters(), lr=args.LRAS, 
+
+            #Special layers (smaller LR)
+            parameters = []
+
+
+            for idx, (name, params) in enumerate(model.named_parameters()):
+                if ('encoderM' in name) | ('fc1' in name[0:10]) | ('fc2' in name[0:10]):
+                    parameters += [{'params': [p for n, p in model.named_parameters() if n == name and p.requires_grad],
+                        'lr': args.LRAS}]
+                else:
+                    parameters += [{'params': [p for n, p in model.named_parameters() if n == name and p.requires_grad],
+                        'lr': args.LRAS / 10}]
+
+
+
+            optimizer = torch.optim.Adam(parameters, lr=args.LRAS, 
                                 betas=(0.9, 0.999), eps=args.LRe, 
                                 weight_decay=1e-5, amsgrad=True)
     

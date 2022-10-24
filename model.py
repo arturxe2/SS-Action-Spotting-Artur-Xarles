@@ -1230,7 +1230,10 @@ class ModelFramesAudio(nn.Module):
         inputsA = inputsA.unsqueeze(-1) #(B x n_frames x H x W x C(1))
         images_shape = inputsV.shape
         audio_shape = inputsA.shape
-        print(audio_shape)
+
+        
+        not_audio = ((inputsA == 0).float().mean(axis=[1, 2, 3]) != 1).squeeze()
+        inputsA[~not_audio] += 1e-05
         
         #DIFFERENT MASKING STRATEGIES (VIDEO)
         
@@ -1366,6 +1369,9 @@ class ModelFramesAudio(nn.Module):
         embeddingV = inputsVmask[:, 0, :]
         embeddingA = inputsAmask[:, 0, :]
 
+        embeddingV = embeddingV[not_audio, :]
+        embeddingA = embeddingA[not_audio, :]
+
         negV = self.queueV.clone().detach()
         negA = self.queueA.clone().detach()
 
@@ -1382,31 +1388,16 @@ class ModelFramesAudio(nn.Module):
         Apreds = self.convMA2(self.relu(self.convMA1(inputsAmask.permute((0, 2, 1))))).permute((0, 2, 1)) #(B x chunk_size * framerate x d)
         
         #GET MASKED IDS
+        MA = MA.cuda()
+        not_audio = not_audio.expand(MA.shape[1], MA.shape[0]).T.cuda()
+        
         realV = inputsV[MV] #(n_maskV x d)
-        realA = inputsA[MA] #(n_maskA x d)
+        realA = inputsA[MA & not_audio] #(n_maskA x d)
         predsV = Vpreds[MV] #(n_maskV x d)
-        predsA = Apreds[MA] #(n_maskA x d)
-        
-        #In case there is no masking in one batch
-        if realV.shape[0] == 0:
-            realV = inputsV[1:3, 0, :]
-            predsV = Vpreds[1:3, 0, :]
-            
-        if realA.shape[0] == 0:
-            realA = inputsA[1:3, 0, :]
-            predsA = Apreds[1:3, 0, :]
-        
-        del MV
-        del MA
-        del inputsV
-        del inputsA
+        predsA = Apreds[MA & not_audio] #(n_maskA x d)
         
         #CONCATENATION OF VISUAL AND AUDIO EVOLVED FEATURES (MASK PART)
-        embeddings = torch.cat((inputsVmask, inputsAmask), dim=1) #(B x 2*(chunk_size * framerate) x d)
-        
-        del inputsVmask
-        del inputsAmask
-        
+        embeddings = torch.cat((inputsVmask, inputsAmask), dim=1) #(B x 2*(chunk_size * framerate) x d)        
         
         #MULTIMODAL TRANSFORMER ENCODER
         embeddings = self.encoderM(embeddings) #(B x 2*(chunk_size * framerate) x d)
